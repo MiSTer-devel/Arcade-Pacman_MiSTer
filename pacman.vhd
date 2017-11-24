@@ -1,6 +1,7 @@
 --
 -- A simulation model of Pacman hardware
 -- Copyright (c) MikeJ - January 2006
+-- Copyright (c) Sorgelig - 2017
 --
 -- All rights reserved
 --
@@ -38,6 +39,7 @@
 --
 -- Revision list
 --
+-- version 006 Refactoring, 8 sprites support by Sorgelig
 -- version 005 Papilio release by Jack Gassett
 -- version 004 spartan3e release
 -- version 003 Jan 2006 release, general tidy up
@@ -49,623 +51,419 @@ library ieee;
   use ieee.std_logic_unsigned.all;
   use ieee.numeric_std.all;
 
-library UNISIM;
-
 entity PACMAN is
-  port (
-    O_VIDEO_R             : out   std_logic_vector(2 downto 0);
-    O_VIDEO_G             : out   std_logic_vector(2 downto 0);
-    O_VIDEO_B             : out   std_logic_vector(1 downto 0);
-    O_HSYNC               : out   std_logic;
-    O_VSYNC               : out   std_logic;
-    O_HBLANK              : out   std_logic;
-    O_VBLANK              : out   std_logic;
-    --
-    O_AUDIO               : out  std_logic_vector(7 downto 0);
-    --
-	 I_JOYSTICK_A            : in    std_logic_vector(4 downto 0);
-	 I_JOYSTICK_B            : in    std_logic_vector(4 downto 0);
-	 
-    I_SW                  : in    std_logic_vector(3 downto 0); -- active high
-    --
-    RESET                 : in    std_logic;
-	 CLK      				  : in    std_logic;
-    ENA_6   		        : in  std_logic
-    );
+	generic(
+		eight_sprites : boolean := false
+	);
+	port (
+		O_VIDEO_R  : out std_logic_vector(2 downto 0);
+		O_VIDEO_G  : out std_logic_vector(2 downto 0);
+		O_VIDEO_B  : out std_logic_vector(1 downto 0);
+		O_HSYNC    : out std_logic;
+		O_VSYNC    : out std_logic;
+		O_HBLANK   : out std_logic;
+		O_VBLANK   : out std_logic;
+		--
+		O_AUDIO    : out std_logic_vector(7 downto 0);
+		--
+		in0        : in  std_logic_vector(7 downto 0);
+		in1        : in  std_logic_vector(7 downto 0);
+		dipsw1     : in  std_logic_vector(7 downto 0);
+		dipsw2     : in  std_logic_vector(7 downto 0);
+		--
+		dn_addr    : in  std_logic_vector(15 downto 0);
+		dn_data    : in  std_logic_vector(7 downto 0);
+		dn_wr      : in  std_logic;
+		--
+		RESET      : in  std_logic;
+		CLK        : in  std_logic;
+		ENA_6      : in  std_logic
+	);
 end;
 
 architecture RTL of PACMAN is
 
 
-    -- timing
-    signal hcnt             : std_logic_vector(8 downto 0) := "010000000"; -- 80
-    signal vcnt             : std_logic_vector(8 downto 0) := "011111000"; -- 0F8
+	-- timing
+	signal hcnt             : std_logic_vector(8 downto 0) := "010000000"; -- 80
+	signal vcnt             : std_logic_vector(8 downto 0) := "011111000"; -- 0F8
 
-    signal do_hsync         : boolean;
-    signal hsync            : std_logic;
-    signal vsync            : std_logic;
-    signal hblank           : std_logic;
-    signal vblank           : std_logic := '1';
+	signal do_hsync         : boolean;
+	signal hsync            : std_logic;
+	signal vsync            : std_logic;
+	signal hblank           : std_logic;
+	signal vblank           : std_logic := '1';
 
-    -- cpu
-    signal cpu_ena          : std_logic;
-    signal cpu_m1_l         : std_logic;
-    signal cpu_mreq_l       : std_logic;
-    signal cpu_iorq_l       : std_logic;
-    signal cpu_rd_l         : std_logic;
-    signal cpu_rfsh_l       : std_logic;
-    signal cpu_wait_l       : std_logic;
-    signal cpu_int_l        : std_logic;
-    signal cpu_nmi_l        : std_logic;
-    signal cpu_busrq_l      : std_logic;
-    signal cpu_addr         : std_logic_vector(15 downto 0);
-    signal cpu_data_out     : std_logic_vector(7 downto 0);
-    signal cpu_data_in      : std_logic_vector(7 downto 0);
+	-- cpu
+	signal cpu_m1_l         : std_logic;
+	signal cpu_mreq_l       : std_logic;
+	signal cpu_iorq_l       : std_logic;
+	signal cpu_rd_l         : std_logic;
+	signal cpu_rfsh_l       : std_logic;
+	signal cpu_int_l        : std_logic := '1';
+	signal cpu_addr         : std_logic_vector(15 downto 0);
+	signal cpu_data_out     : std_logic_vector(7 downto 0);
+	signal cpu_data_in      : std_logic_vector(7 downto 0);
 
-    signal program_rom_dinl : std_logic_vector(7 downto 0);
-    signal sync_bus_cs_l    : std_logic;
+	signal program_rom_dinl : std_logic_vector(7 downto 0);
+	signal program_rom_dinh : std_logic_vector(7 downto 0);
+	signal sync_bus_cs_l    : std_logic;
 
-    signal control_reg      : std_logic_vector(7 downto 0);
-    --
-    signal vram_addr_ab     : std_logic_vector(11 downto 0);
-    signal ab               : std_logic_vector(11 downto 0);
+	signal control_reg      : std_logic_vector(7 downto 0);
+	--
+	signal sync_bus_db      : std_logic_vector(7 downto 0);
+	signal sync_bus_r_w_l   : std_logic;
+	signal sync_bus_wreq_l  : std_logic;
+	signal sync_bus_stb     : std_logic;
 
-    signal sync_bus_db      : std_logic_vector(7 downto 0);
-    signal sync_bus_r_w_l   : std_logic;
-    signal sync_bus_wreq_l  : std_logic;
-    signal sync_bus_stb     : std_logic;
+	signal cpu_vec_reg      : std_logic_vector(7 downto 0);
+	signal sync_bus_reg     : std_logic_vector(7 downto 0);
 
-    signal cpu_vec_reg      : std_logic_vector(7 downto 0);
-    signal sync_bus_reg     : std_logic_vector(7 downto 0);
+	signal hp               : std_logic_vector ( 4 downto 0);
+	signal vp               : std_logic_vector ( 4 downto 0);
+	signal ram_cs           : std_logic;
+	signal ram_data         : std_logic_vector(7 downto 0);
+	signal vram_data        : std_logic_vector(7 downto 0);
+	signal sprite_xy_data   : std_logic_vector(7 downto 0);
+	signal vram_addr        : std_logic_vector(11 downto 0);
 
-    signal vram_l           : std_logic;
-    signal rams_data_out    : std_logic_vector(7 downto 0);
-    -- more decode
-    signal wr0_l            : std_logic;
-    signal wr1_l            : std_logic;
-    signal wr2_l            : std_logic;
-    signal iodec_out_l      : std_logic;
-    signal iodec_wdr_l      : std_logic;
-    signal iodec_in0_l      : std_logic;
-    signal iodec_in1_l      : std_logic;
-    signal iodec_dipsw_l    : std_logic;
+	signal iodec_spr_l      : std_logic;
+	signal iodec_out_l      : std_logic;
+	signal iodec_wdr_l      : std_logic;
+	signal iodec_sn1_l      : std_logic;
+	signal iodec_sn2_l      : std_logic;
+	signal iodec_in0_l      : std_logic;
+	signal iodec_in1_l      : std_logic;
+	signal iodec_dipsw1_l   : std_logic;
+	signal iodec_dipsw2_l   : std_logic;
 
-    -- watchdog
-    signal watchdog_cnt     : std_logic_vector(3 downto 0);
-    signal watchdog_reset_l : std_logic;
-    signal freeze           : std_logic;
+	-- watchdog
+	signal watchdog_cnt     : std_logic_vector(3 downto 0);
+	signal watchdog_reset_l : std_logic;
 
-    -- ip registers
-    signal button_in        : std_logic_vector(13 downto 0);
-    signal button_debounced : std_logic_vector(13 downto 0);
-    signal in0_reg          : std_logic_vector(7 downto 0);
-    signal in1_reg          : std_logic_vector(7 downto 0);
-    signal dipsw_reg        : std_logic_vector(7 downto 0);
-    signal joystick_reg     : std_logic_vector(4 downto 0);
-	 signal joystick_reg2     : std_logic_vector(4 downto 0);
+	signal sn_we          : std_logic;
+	signal wav1,wav2,wav3 : std_logic_vector(7 downto 0);
 
+	signal rom0_cs,rom1_cs  : std_logic;
 
 begin
-  joystick_reg <= I_JOYSTICK_A;
-  joystick_reg2 <=  I_JOYSTICK_B;
+
+rom0_cs <= '1' when dn_addr(15 downto 14) = "00" else '0';
+rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
   
-  --
-  -- video timing
-  --
-  p_hvcnt : process
-    variable hcarry,vcarry : boolean;
-  begin
-    wait until rising_edge(clk);
-    if (ena_6 = '1') then
-      hcarry := (hcnt = "111111111");
-      if hcarry then
-        hcnt <= "010000000"; -- 080
-      else
-        hcnt <= hcnt +"1";
-      end if;
-      -- hcnt 8 on circuit is 256H_L
-      vcarry := (vcnt = "111111111");
-      if do_hsync then
-        if vcarry then
-          vcnt <= "011111000"; -- 0F8
-        else
-          vcnt <= vcnt +"1";
-        end if;
-      end if;
-    end if;
-  end process;
+--
+-- video timing
+--
+p_hvcnt : process
+begin
+	wait until rising_edge(clk);
+	if (ena_6 = '1') then
+		if hcnt = "111111111" then
+			hcnt <= "010000000"; -- 080
+		else
+			hcnt <= hcnt +"1";
+		end if;
+		-- hcnt 8 on circuit is 256H_L
+		if do_hsync then
+			if vcnt = "111111111" then
+				vcnt <= "011111000"; -- 0F8
+			else
+				vcnt <= vcnt +"1";
+			end if;
+		end if;
+	end if;
+end process;
 
-  p_sync_comb : process(hcnt, vcnt)
-  begin
-    vsync <= not vcnt(8);
-    do_hsync <= (hcnt = "010101111"); -- 0AF
-  end process;
+vsync <= not vcnt(8);
+do_hsync <= (hcnt = "010101111"); -- 0AF
 
-  p_sync : process
-  begin
-    wait until rising_edge(clk);
-    if (ena_6 = '1') then
-      -- Timing hardware is coded differently to the real hw
-      -- to avoid the use of multiple clocks. Result is identical.
+p_sync : process
+begin
+	wait until rising_edge(clk);
+	if (ena_6 = '1') then
 
-      if (hcnt = "010010111") then -- 097
-		  O_HBLANK <= '1';
-      elsif (hcnt = "010001111") then -- 08F
-        hblank <= '1';
-      elsif (hcnt = "011101111") then
-        hblank <= '0'; -- 0EF
-		  O_HBLANK <= '0';
-      end if;
+		if (hcnt = "010001111") and not eight_sprites then -- 08F
+			hblank <= '1';
+		elsif (hcnt = "011101111") and not eight_sprites then
+			hblank <= '0'; -- 0EF
+		elsif (hcnt = "111111111") and eight_sprites then
+			hblank <= '1';
+		elsif (hcnt = "011111111") and eight_sprites then
+			hblank <= '0';
+		end if;
 
-      if do_hsync then
-        hsync <= '1';
-      elsif (hcnt = "011001111") then -- 0CF
-        hsync <= '0';
-      end if;
+		if do_hsync then
+			hsync <= '1';
+		elsif (hcnt = "011001111") then -- 0CF
+			hsync <= '0';
+		end if;
 
-      if do_hsync then
-        if (vcnt = "111101111") then -- 1EF
-          vblank <= '1';
-        elsif (vcnt = "100001111") then -- 10F
-          vblank <= '0';
-        end if;
-      end if;
-    end if;
-  end process;
+		if do_hsync then
+			if (vcnt = "111101111") then -- 1EF
+				vblank <= '1';
+			elsif (vcnt = "100001111") then -- 10F
+				vblank <= '0';
+			end if;
+		end if;
+	end if;
+end process;
 
-  --
-  -- cpu
-  --
-  p_cpu_wait_comb : process(freeze, sync_bus_wreq_l)
-  begin
-    cpu_wait_l  <= '1';
-    if (freeze = '1') or (sync_bus_wreq_l = '0') then
-      cpu_wait_l  <= '0';
-    end if;
-  end process;
+--
+-- cpu
+--
+p_irq_req_watchdog : process
+	variable rising_vblank : boolean;
+begin
+	wait until rising_edge(clk);
+	if (ena_6 = '1') then
+		rising_vblank := do_hsync and (vcnt = "111101111"); -- 1EF
 
-  p_irq_req_watchdog : process
-    variable rising_vblank : boolean;
-  begin
-    wait until rising_edge(clk);
-    if (ena_6 = '1') then
-      rising_vblank := do_hsync and (vcnt = "111101111"); -- 1EF
-      --rising_vblank := do_hsync; -- debug
-      -- interrupt 8c
+		if (control_reg(0) = '0') then
+			cpu_int_l <= '1';
+		elsif rising_vblank then -- 1EF
+			cpu_int_l <= '0';
+		end if;
 
-      if (control_reg(0) = '0') then
-        cpu_int_l <= '1';
-      elsif rising_vblank then -- 1EF
-        cpu_int_l <= '0';
-      end if;
+		-- watchdog 8c
+		-- note sync reset
+		if (reset = '1') then
+			watchdog_cnt <= "1111";
+		elsif (iodec_wdr_l = '0') then
+			watchdog_cnt <= "0000";
+		elsif rising_vblank then
+			watchdog_cnt <= watchdog_cnt + "1";
+		end if;
 
-      -- watchdog 8c
-      -- note sync reset
-      if (reset = '1') then
-        watchdog_cnt <= "1111";
-      elsif (iodec_wdr_l = '0') then
-        watchdog_cnt <= "0000";
-      elsif rising_vblank and (freeze = '0') then
-        watchdog_cnt <= watchdog_cnt + "1";
-      end if;
+		--watchdog_reset_l <= not reset;
+
+		watchdog_reset_l <= '1';
+		if (watchdog_cnt = "1111") then
+			watchdog_reset_l <= '0';
+		end if;
+	end if;
+end process;
+
+u_cpu : entity work.T80sed
+port map
+(
+	RESET_n => watchdog_reset_l and (not reset),
+	CLK_n   => clk,
+	CLKEN   => hcnt(0) and ena_6,
+	WAIT_n  => sync_bus_wreq_l,
+	INT_n   => cpu_int_l,
+	NMI_n   => '1',
+	BUSRQ_n => '1',
+	M1_n    => cpu_m1_l,
+	MREQ_n  => cpu_mreq_l,
+	IORQ_n  => cpu_iorq_l,
+	RD_n    => cpu_rd_l,
+	WR_n    => open,
+	RFSH_n  => cpu_rfsh_l,
+	HALT_n  => open,
+	BUSAK_n => open,
+	A       => cpu_addr,
+	DI      => cpu_data_in,
+	DO      => cpu_data_out
+);
+
+-- rom     0x0000 - 0x3FFF
+-- syncbus 0x4000 - 0x7FFF
+sync_bus_cs_l   <= '0' when cpu_mreq_l = '0' and cpu_rfsh_l = '1' and cpu_addr(14) = '1' else '1';
+sync_bus_wreq_l <= '0' when sync_bus_cs_l = '0' and hcnt(1) = '1' and cpu_rd_l = '0' else '1';
+sync_bus_stb    <= '0' when sync_bus_cs_l = '0' and hcnt(1) = '0' else '1';
+sync_bus_r_w_l  <= '0' when sync_bus_stb  = '0' and cpu_rd_l = '1' else '1';
+
+--
+-- sync bus custom ic
+--
+p_sync_bus_reg : process
+begin
+	wait until rising_edge(clk);
+	if (ena_6 = '1') then
+		-- register on sync bus module that is used to store interrupt vector
+		if (cpu_iorq_l = '0') and (cpu_m1_l = '1') then
+			cpu_vec_reg <= cpu_data_out;
+		end if;
+
+		-- read holding reg
+		if (hcnt(1 downto 0) = "01") then
+			sync_bus_reg <= cpu_data_in;
+		end if;
+	end if;
+end process;
 
 
-      watchdog_reset_l <= '1';
-      if (watchdog_cnt = "1111") then
-        watchdog_reset_l <= '0';
-      end if;
+-- WRITE
+-- out_l 0x5000 - 0x503F control space
+-- sn1_l 0x5040 - 0x504F sound
+-- sn2_l 0x5050 - 0x505F sound
+-- spr_l 0x5060 - 0x506F sprite
+-- wdr_l 0x50C0 - 0x50FF watchdog reset
+iodec_out_l <= '0' when sync_bus_r_w_l = '0' and cpu_addr(15 downto 6) = X"50"&"00" else '1';
+iodec_sn1_l <= '0' when sync_bus_r_w_l = '0' and cpu_addr(15 downto 4) = X"50"&X"4" else '1';
+iodec_sn2_l <= '0' when sync_bus_r_w_l = '0' and cpu_addr(15 downto 4) = X"50"&X"5" else '1';
+iodec_spr_l <= '0' when sync_bus_r_w_l = '0' and cpu_addr(15 downto 4) = X"50"&X"6" else '1';
+iodec_wdr_l <= '0' when sync_bus_r_w_l = '0' and cpu_addr(15 downto 6) = X"50"&"11" else '1';
 
-      -- simulation
-      -- pragma translate_off
-      -- synopsys translate_off
-      watchdog_reset_l <= not reset; -- watchdog disable
-      -- synopsys translate_on
-      -- pragma translate_on
-    end if;
-  end process;
+-- READ
+-- in0_l   0x5000 - 0x503F in port 0
+-- in1_l   0x5040 - 0x507F in port 1
+-- dipsw_l 0x5080 - 0x50BF dip switches
+iodec_in0_l    <= '0' when sync_bus_r_w_l = '1' and cpu_addr(15 downto 6) = X"50"&"00" else '1';
+iodec_in1_l    <= '0' when sync_bus_r_w_l = '1' and cpu_addr(15 downto 6) = X"50"&"01" else '1';
+iodec_dipsw1_l <= '0' when sync_bus_r_w_l = '1' and cpu_addr(15 downto 6) = X"50"&"10" else '1';
+iodec_dipsw2_l <= '0' when sync_bus_r_w_l = '1' and cpu_addr(15 downto 6) = X"50"&"11" else '1';
 
-  -- other cpu signals
-  cpu_busrq_l <= '1';
-  cpu_nmi_l   <= '1';
+p_control_reg : process
+begin
+	-- 8 bit addressable latch 7K
+	-- (made into register)
 
-  p_cpu_ena : process(hcnt, ena_6)
-  begin
-    cpu_ena <= '0';
-    if (ena_6 = '1') then
-      cpu_ena <= hcnt(0);
-    end if;
-  end process;
+	-- 0 interrupt ena
+	-- 1 sound ena
+	-- 2 not used
+	-- 3 flip
+	-- 4 1 player start lamp
+	-- 5 2 player start lamp
+	-- 6 coin lockout
+	-- 7 coin counter
 
-  u_cpu : entity work.T80sed
-          port map (
-              RESET_n => watchdog_reset_l,
-              CLK_n   => clk,
-              CLKEN   => cpu_ena,
-              WAIT_n  => cpu_wait_l,
-              INT_n   => cpu_int_l,
-              NMI_n   => cpu_nmi_l,
-              BUSRQ_n => cpu_busrq_l,
-              M1_n    => cpu_m1_l,
-              MREQ_n  => cpu_mreq_l,
-              IORQ_n  => cpu_iorq_l,
-              RD_n    => cpu_rd_l,
-              WR_n    => open,
-              RFSH_n  => cpu_rfsh_l,
-              HALT_n  => open,
-              BUSAK_n => open,
-              A       => cpu_addr,
-              DI      => cpu_data_in,
-              DO      => cpu_data_out
-              );
-  --
-  -- primary addr decode
-  --
-  p_mem_decode_comb : process(cpu_rfsh_l, cpu_rd_l, cpu_mreq_l, cpu_addr)
-  begin
-    -- rom     0x0000 - 0x3FFF
-    -- syncbus 0x4000 - 0x7FFF
+	wait until rising_edge(clk);
+	if (ena_6 = '1') then
+		if (watchdog_reset_l = '0') then
+			control_reg <= (others => '0');
+		elsif (iodec_out_l = '0') then
+			control_reg(to_integer(unsigned(cpu_addr(2 downto 0)))) <= cpu_data_out(0);
+		end if;
+	end if; 
+end process;
 
-    -- 7M
-    -- 7N
-    sync_bus_cs_l <= '1';
---    program_rom_cs_l  <= '1';
+cpu_data_in <=	cpu_vec_reg      when (cpu_iorq_l = '0') and (cpu_m1_l = '0') else 
+					sync_bus_reg     when sync_bus_wreq_l = '0' else
+					program_rom_dinl when cpu_addr(15 downto 14) = "00" else -- ROM at 0000 - 3fff
+					program_rom_dinh when cpu_addr(15 downto 14) = "10" else -- ROM at 8000 - bfff
+					in0              when iodec_in0_l = '0' else
+					in1              when iodec_in1_l = '0' else
+					dipsw1           when iodec_dipsw1_l = '0' else
+					dipsw2           when iodec_dipsw2_l = '0' else
+					ram_data;
 
-    if (cpu_mreq_l = '0') and (cpu_rfsh_l = '1') then
+u_program_rom0 : work.dpram generic map (14,8)
+port map
+(
+	clock_a   => clk,
+	wren_a    => dn_wr and rom0_cs,
+	address_a => dn_addr(13 downto 0),
+	data_a    => dn_data,
 
---      if (cpu_addr(14) = '0') and (cpu_rd_l = '0') then
---         program_rom_cs_l <= '0';
---      end if;
+	clock_b   => clk,
+	address_b => cpu_addr(13 downto 0),
+	q_b       => program_rom_dinl
+);
 
-      if (cpu_addr(14) = '1') then
-         sync_bus_cs_l <= '0';
-      end if;
+u_program_rom1 : work.dpram generic map (14,8)
+port map
+(
+	clock_a   => clk,
+	wren_a    => dn_wr and rom1_cs,
+	address_a => dn_addr(13 downto 0),
+	data_a    => dn_data,
 
-    end if;
-  end process;
-  --
-  -- sync bus custom ic
-  --
-  p_sync_bus_reg : process
-  begin
-    wait until rising_edge(clk);
-    if (ena_6 = '1') then
-      -- register on sync bus module that is used to store interrupt vector
-      if (cpu_iorq_l = '0') and (cpu_m1_l = '1') then
-        cpu_vec_reg <= cpu_data_out;
-      end if;
+	clock_b   => clk,
+	address_b => cpu_addr(13 downto 0),
+	q_b       => program_rom_dinh
+);
 
-      -- read holding reg
-      if (hcnt(1 downto 0) = "01") then
-        sync_bus_reg <= cpu_data_in;
-      end if;
-    end if;
-  end process;
+ram_cs <= '1' when cpu_addr(15 downto 12) = X"4" else '0';
 
-  p_sync_bus_comb : process(cpu_rd_l, sync_bus_cs_l, hcnt)
-  begin
-    -- sync_bus_stb is now an active low clock enable signal
-    sync_bus_stb <= '1';
-    sync_bus_r_w_l <= '1';
+u_rams : work.dpram generic map (12,8)
+port map
+(
+	clock_a   => clk,
+	enable_a  => ena_6,
+	wren_a    => not sync_bus_r_w_l and ram_cs,
+	address_a => cpu_addr(11 downto 0),
+	data_a    => cpu_data_out, -- cpu only source of ram data
+	q_a       => ram_data,
 
-    if (sync_bus_cs_l = '0') and (hcnt(1) = '0') then
-      if (cpu_rd_l = '1') then
-        sync_bus_r_w_l <= '0';
-      end if;
-      sync_bus_stb <= '0';
-    end if;
+	clock_b   => clk,
+	address_b => vram_addr(11 downto 0),
+	q_b       => vram_data
+);
 
-    sync_bus_wreq_l <= '1';
-    if (sync_bus_cs_l = '0') and (hcnt(1) = '1') and (cpu_rd_l = '0') then
-      sync_bus_wreq_l <= '0';
-    end if;
-  end process;
-  --
-  -- vram addr custom ic
-  --
-  u_vram_addr : entity work.PACMAN_VRAM_ADDR
-    port map (
-      AB      => vram_addr_ab,
-      H256_L  => hcnt(8),
-      H128    => hcnt(7),
-      H64     => hcnt(6),
-      H32     => hcnt(5),
-      H16     => hcnt(4),
-      H8      => hcnt(3),
-      H4      => hcnt(2),
-      H2      => hcnt(1),
-      H1      => hcnt(0),
-      V128    => vcnt(7),
-      V64     => vcnt(6),
-      V32     => vcnt(5),
-      V16     => vcnt(4),
-      V8      => vcnt(3),
-      V4      => vcnt(2),
-      V2      => vcnt(1),
-      V1      => vcnt(0),
-      FLIP    => control_reg(3)
-      );
+--
+-- video subsystem
+--
 
-  p_ab_mux_comb : process(hcnt, cpu_addr, vram_addr_ab)
-  begin
-    --When 2H is low, the CPU controls the bus.
-    if (hcnt(1) = '0') then
-      ab <= cpu_addr(11 downto 0);
-    else
-      ab <= vram_addr_ab;
-    end if;
-  end process;
+-- vram addr custom ic
+hp <= hcnt(7 downto 3) when control_reg(3) = '0' else not hcnt(7 downto 3);
+vp <= vcnt(7 downto 3) when control_reg(3) = '0' else not vcnt(7 downto 3);
+vram_addr <= '0' & hcnt(2) & vp & hp when hcnt(8)='1' else
+             x"FF" & hcnt(6 downto 4) & hcnt(2) when hblank = '1' else
+             '0' & hcnt(2) & hp(3) & hp(3) & hp(3) & hp(3) & hp(0) & vp;
 
-  p_vram_comb : process(hcnt, cpu_addr, sync_bus_stb)
-    variable a,b : std_logic;
-  begin
+sprite_xy_ram : work.dpram generic map (4,8)
+port map
+(
+	clock_a   => CLK,
+	enable_a  => ENA_6,
+	wren_a    => not iodec_spr_l,
+	address_a => cpu_addr(3 downto 0),
+	data_a    => cpu_data_out,
 
-    a := not (cpu_addr(12) or sync_bus_stb);
-    b := hcnt(1) and hcnt(0);
-    vram_l <= not (a or b);
-  end process;
+	clock_b   => CLK,		
+	address_b => vram_addr(3 downto 0),
+	q_b       => sprite_xy_data
+);
 
-  p_io_decode_comb : process(sync_bus_r_w_l, sync_bus_stb, ab, cpu_addr)
-    variable sel  : std_logic_vector(2 downto 0);
-    variable dec  : std_logic_vector(7 downto 0);
-    variable selb : std_logic_vector(1 downto 0);
-    variable decb : std_logic_vector(3 downto 0);
-  begin
-    -- WRITE
+u_video : entity work.PACMAN_VIDEO
+port map
+(
+	I_HCNT    => hcnt,
+	I_VCNT    => vcnt,
+	--
+	vram_data => vram_data,
+	sprite_xy => sprite_xy_data,
+	--
+	I_HBLANK  => hblank,
+	I_VBLANK  => vblank,
+	I_FLIP    => control_reg(3),
+	O_HBLANK  => O_HBLANK,
+	--
+	dn_addr   => dn_addr,
+	dn_data   => dn_data,
+	dn_wr     => dn_wr,
+	--
+	O_RED     => O_VIDEO_R,
+	O_GREEN   => O_VIDEO_G,
+	O_BLUE    => O_VIDEO_B,
+	--
+	ENA_6     => ena_6,
+	CLK       => clk
+);
 
-    -- out_l 0x5000 - 0x503F control space
+O_HSYNC   <= hSync;
+O_VSYNC   <= vSync;
+O_VBLANK  <= vblank;
 
-    -- wr0_l 0x5040 - 0x504F sound
-    -- wr1_l 0x5050 - 0x505F sound
-    -- wr2_l 0x5060 - 0x506F sprite
-
-    --       0x5080 - 0x50BF unused
-
-    -- wdr_l 0x50C0 - 0x50FF watchdog reset
-
-    -- READ
-
-    -- in0_l   0x5000 - 0x503F in port 0
-    -- in1_l   0x5040 - 0x507F in port 1
-    -- dipsw_l 0x5080 - 0x50BF dip switches
-
-    -- 7J
-    dec := "11111111";
-    sel := sync_bus_r_w_l & ab(7) & ab(6);
-    if (cpu_addr(12) = '1') and ( sync_bus_stb = '0')  then
-      case sel is
-        when "000" => dec := "11111110";
-        when "001" => dec := "11111101";
-        when "010" => dec := "11111011";
-        when "011" => dec := "11110111";
-        when "100" => dec := "11101111";
-        when "101" => dec := "11011111";
-        when "110" => dec := "10111111";
-        when "111" => dec := "01111111";
-        when others => null;
-      end case;
-    end if;
-    iodec_out_l   <= dec(0);
-    iodec_wdr_l   <= dec(3);
-
-    iodec_in0_l   <= dec(4);
-    iodec_in1_l   <= dec(5);
-    iodec_dipsw_l <= dec(6);
-
-    -- 7M
-    decb := "1111";
-    selb := ab(5) & ab(4);
-    if (dec(1) = '0') then
-      case selb is
-        when "00" => decb := "1110";
-        when "01" => decb := "1101";
-        when "10" => decb := "1011";
-        when "11" => decb := "0111";
-        when others => null;
-      end case;
-    end if;
-    wr0_l <= decb(0);
-    wr1_l <= decb(1);
-    wr2_l <= decb(2);
-  end process;
-
-  p_control_reg : process
-    variable ena : std_logic_vector(7 downto 0);
-  begin
-    -- 8 bit addressable latch 7K
-    -- (made into register)
-
-    -- 0 interrupt ena
-    -- 1 sound ena
-    -- 2 not used
-    -- 3 flip
-    -- 4 1 player start lamp
-    -- 5 2 player start lamp
-    -- 6 coin lockout
-    -- 7 coin counter
-
-    wait until rising_edge(clk);
-    if (ena_6 = '1') then
-      ena := "00000000";
-      if (iodec_out_l = '0') then
-        case ab(2 downto 0) is
-          when "000" => ena := "00000001";
-          when "001" => ena := "00000010";
-          when "010" => ena := "00000100";
-          when "011" => ena := "00001000";
-          when "100" => ena := "00010000";
-          when "101" => ena := "00100000";
-          when "110" => ena := "01000000";
-          when "111" => ena := "10000000";
-          when others => null;
-        end case;
-      end if;
-
-      if (watchdog_reset_l = '0') then
-        control_reg <= (others => '0');
-      else
-        for i in 0 to 7 loop
-          if (ena(i) = '1') then
-            control_reg(i) <= cpu_data_out(0);
-          end if;
-        end loop;
-      end if;
-    end if; 
-  end process;
-
-  p_db_mux_comb : process(hcnt, cpu_data_out, rams_data_out)
-  begin
-    -- simplified data source for video subsystem
-    -- only cpu or ram are sources of interest
-    if (hcnt(1) = '0') then
-      sync_bus_db <= cpu_data_out;
-    else
-      sync_bus_db <= rams_data_out;
-    end if;
-  end process;
-
-  p_cpu_data_in_mux_comb : process(cpu_addr, cpu_iorq_l, cpu_m1_l, sync_bus_wreq_l,
-                                   iodec_in0_l, iodec_in1_l, iodec_dipsw_l, cpu_vec_reg, sync_bus_reg, program_rom_dinl,
-											  rams_data_out, in0_reg, in1_reg, dipsw_reg)
-  begin
-    -- simplifed again
-    if (cpu_iorq_l = '0') and (cpu_m1_l = '0') then
-      cpu_data_in <= cpu_vec_reg;
-    elsif (sync_bus_wreq_l = '0') then
-      cpu_data_in <= sync_bus_reg;
-    else
-      if (cpu_addr(15 downto 14) = "00") then      -- ROM at 0000 - 3fff
-        cpu_data_in <= program_rom_dinl;
-      elsif (cpu_addr(15 downto 13) = "100") then  -- ROM at 8000 - 9fff
-        cpu_data_in <= X"00";
-      else
-        cpu_data_in <= rams_data_out;
-        if (iodec_in0_l   = '0') then cpu_data_in <= in0_reg; end if;
-        if (iodec_in1_l   = '0') then cpu_data_in <= in1_reg; end if;
-        if (iodec_dipsw_l = '0') then cpu_data_in <= dipsw_reg; end if;
-      end if;
-    end if;
-  end process;
-
-	u_rams : work.dpram generic map (12,8)
-	port map
-	(
-		clk_a_i  => clk,
-		en_a_i   => ena_6,
-		we_i     => not sync_bus_r_w_l and not vram_l,
-		addr_a_i => ab(11 downto 0),
-		data_a_i => cpu_data_out, -- cpu only source of ram data
-		
-		clk_b_i  => clk,
-		addr_b_i => ab(11 downto 0),
-		data_b_o => rams_data_out
-	);
-
-  -- example of internal program rom, if you have a big enough device
-  u_program_rom : entity work.ROM_PGM_0
-    port map (
-      CLK         => clk,
-      ADDR        => cpu_addr(13 downto 0),
-      DATA        => program_rom_dinl
-      );
-
-  --
-  -- video subsystem
-  --
-  u_video : entity work.PACMAN_VIDEO
-    port map (
-      I_HCNT        => hcnt,
-      I_VCNT        => vcnt,
-      --
-      I_AB          => ab,
-      I_DB          => sync_bus_db,
-      --
-      I_HBLANK      => hblank,
-      I_VBLANK      => vblank,
-      I_FLIP        => control_reg(3),
-      I_WR2_L       => wr2_l,
-      --
-      O_RED         => O_VIDEO_R,
-      O_GREEN       => O_VIDEO_G,
-      O_BLUE        => O_VIDEO_B,
-      --
-      ENA_6         => ena_6,
-      CLK           => clk
-      );
-
-      O_HSYNC   <= hSync;
-      O_VSYNC   <= vSync;
-
-      --O_HBLANK  <= hblank;
-      O_VBLANK  <= vblank;
-
-  --
-  --
-  -- audio subsystem
-  --
-  u_audio : entity work.PACMAN_AUDIO
-    port map (
-      I_HCNT        => hcnt,
-      --
-      I_AB          => ab,
-      I_DB          => sync_bus_db,
-      --
-      I_WR1_L       => wr1_l,
-      I_WR0_L       => wr0_l,
-      I_SOUND_ON    => control_reg(1),
-      --
-      O_AUDIO       => O_AUDIO,
-      ENA_6         => ena_6,
-      CLK           => clk
-      );
-
-  button_in(8 downto 5) <= I_SW(3 downto 0);
-  button_in(4 downto 0) <= joystick_reg(4 downto 0);
-  button_in(13 downto 9) <= joystick_reg2(4 downto 0);
-  
-  button_debounced <= button_in;
-
---button_debounced	Arcade MegaWing Location
---			8						RIGHT PushButton
---			7						DOWN PushButton
---			6						UP PushButton
---			5						LEFT PushButton
---			4						Fire Joystick
---			3						RIGHT Joystick
---			2						LEFT Joystick
---			1						DOWN Joystick
---			0						UP Joystick
-
-  p_input_registers : process
-  begin
-    wait until rising_edge(clk);
-    if (ena_6 = '1') then
-		-- on is low
-      in0_reg(7) <= not button_debounced(6); -- credit	Up Pushbutton
-      in0_reg(6) <= '1';							-- coin2    
-      in0_reg(5) <= not button_debounced(7); -- coin1		DOWN PushButton
-      in0_reg(4) <= '1'; 							-- test_l dipswitch (rack advance)
-      in0_reg(3) <= button_debounced(1); 		-- p1 down
-      in0_reg(2) <= button_debounced(3); 		-- p1 right
-      in0_reg(1) <= button_debounced(2); 		-- p1 left
-      in0_reg(0) <= button_debounced(0); 		-- p1 up
-
-      in1_reg(7) <= '1'; 							-- table 1-upright 0-cocktail
-      in1_reg(6) <= not button_debounced(8); -- start2		RIGHT PushButton
-      in1_reg(5) <= not button_debounced(5); -- start1		LEFT PushButton
-      in1_reg(4) <= button_debounced(13);		-- test and fire	
-      in1_reg(3) <= button_debounced(10);		-- p2 down
-		in1_reg(2) <= button_debounced(12); 	-- p2 right
-      in1_reg(1) <= button_debounced(11); 	-- p2 left
-      in1_reg(0) <= button_debounced(9); 		-- p2 up		
-
-      -- on is low
-      freeze <= '0';
-      dipsw_reg(7) <= '1'; -- character set ?
-      dipsw_reg(6) <= '1'; -- difficulty ?
-      dipsw_reg(5 downto 4) <= "00"; -- bonus pacman at 10K
-      dipsw_reg(3 downto 2) <= "11"; -- pacman (3)
-      dipsw_reg(1 downto 0) <= "01"; -- cost  (1 coin, 1 play)
-    end if;
-  end process;
+--
+--
+-- audio subsystem
+--
+u_audio : entity work.PACMAN_AUDIO
+port map (
+	I_HCNT        => hcnt,
+	--
+	I_AB          => cpu_addr(11 downto 0),
+	I_DB          => cpu_data_out,
+	--
+	I_WR1_L       => iodec_sn2_l,
+	I_WR0_L       => iodec_sn1_l,
+	I_SOUND_ON    => control_reg(1),
+	--
+	O_AUDIO       => O_AUDIO,
+	ENA_6         => ena_6,
+	CLK           => clk
+);
 
 end RTL;

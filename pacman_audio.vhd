@@ -97,29 +97,29 @@ begin
 	vol_ram : work.dpram generic map (4,4)
 	port map
 	(
-		clk_a_i  => CLK,
-		en_a_i   => ENA_6,
-		we_i     => not I_WR1_L,
-		addr_a_i => addr(3 downto 0),
-		data_a_i => data,
+		clock_a   => CLK,
+		enable_a  => ENA_6,
+		wren_a    => not I_WR1_L,
+		address_a => addr(3 downto 0),
+		data_a    => data,
 
-		clk_b_i  => CLK,
-		addr_b_i => addr(3 downto 0),
-		data_b_o => vol_ram_dout
+		clock_b   => CLK,
+		address_b => addr(3 downto 0),
+		q_b       => vol_ram_dout
 	);
   
 	frq_ram : work.dpram generic map (4,4)
 	port map
 	(
-		clk_a_i  => CLK,
-		en_a_i   => ENA_6,
-		we_i     => rom3m(1),
-		addr_a_i => addr(3 downto 0),
-		data_a_i => data,
+		clock_a   => CLK,
+		enable_a  => ENA_6,
+		wren_a    => rom3m(1),
+		address_a => addr(3 downto 0),
+		data_a    => data,
 
-		clk_b_i  => CLK,
-		addr_b_i => addr(3 downto 0),
-		data_b_o => frq_ram_dout
+		clock_b   => CLK,
+		address_b => addr(3 downto 0),
+		q_b       => frq_ram_dout
 	);
 
   p_control_rom_comb : process(I_HCNT)

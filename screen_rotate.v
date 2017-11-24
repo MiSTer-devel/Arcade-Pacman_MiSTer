@@ -1,6 +1,6 @@
 //============================================================================
 //
-//  Screen 90 deg. rotation
+//  Screen +90/-90 deg. rotation
 //  Copyright (C) 2017 Sorgelig
 //
 //  This program is free software; you can redistribute it and/or modify it
@@ -23,7 +23,7 @@
 // The output is supposed to be send to VIP scaler input.
 //
 
-module screen_rotate #(parameter WIDTH=320, HEIGHT=240, DEPTH=8)
+module screen_rotate #(parameter WIDTH=320, HEIGHT=240, DEPTH=8, MARGIN=8, CCW=0)
 (
 	input              clk_in,
 	input              ce_in,
@@ -76,7 +76,7 @@ always @(posedge clk_in) begin
 	reg [aw-1:0] addr_row;
 
 	if(en_we) begin
-		addr_in <= addr_in+HEIGHT[aw-1:0];
+		addr_in <= CCW ? addr_in-HEIGHT[aw-1:0] : addr_in+HEIGHT[aw-1:0];
 		xpos <= xpos + 1;
 	end
 
@@ -85,17 +85,17 @@ always @(posedge clk_in) begin
 	if(~old_blank & blank) begin
 		xpos <= 0;
 		ypos <= ypos + 1;
-		addr_in  <= addr_row - 1'd1;
-		addr_row <= addr_row - 1'd1;
+		addr_in  <= CCW ? addr_row + 1'd1 : addr_row - 1'd1;
+		addr_row <= CCW ? addr_row + 1'd1 : addr_row - 1'd1;
 	end
 
 	if(~old_vblank & vblank) begin
 		if(buff) begin
-			addr_in  <= HEIGHT[aw-1:0]-1'd1;
-			addr_row <= HEIGHT[aw-1:0]-1'd1;
+			addr_in  <= CCW ? bufsize[aw-1:0]-HEIGHT[aw-1:0] : HEIGHT[aw-1:0]-1'd1;
+			addr_row <= CCW ? bufsize[aw-1:0]-HEIGHT[aw-1:0] : HEIGHT[aw-1:0]-1'd1;
 		end else begin
-			addr_in  <= bufsize[aw-1:0]+HEIGHT[aw-1:0]-1'd1;
-			addr_row <= bufsize[aw-1:0]+HEIGHT[aw-1:0]-1'd1;
+			addr_in  <= CCW ? bufsize[aw-1:0]+bufsize[aw-1:0]-HEIGHT[aw-1:0] : bufsize[aw-1:0]+HEIGHT[aw-1:0]-1'd1;
+			addr_row <= CCW ? bufsize[aw-1:0]+bufsize[aw-1:0]-HEIGHT[aw-1:0] : bufsize[aw-1:0]+HEIGHT[aw-1:0]-1'd1;
 		end
 		buff <= ~buff;
 		ypos <= 0;
@@ -125,9 +125,13 @@ always @(posedge clk_out) begin
 
 	if(~vsync) begin
 
-		vout <= out;
 		hs <= (xpos >= HEIGHT);
-		if(xpos < HEIGHT) addr_out <= addr_out + 1'd1;
+		if((ypos<MARGIN) || (ypos>=WIDTH+MARGIN)) begin
+			vout <= 0;
+		end else begin
+			vout <= out;
+			if(xpos < HEIGHT) addr_out <= addr_out + 1'd1;
+		end
 
 		xpos <= xpos + 1;
 
@@ -135,7 +139,7 @@ always @(posedge clk_out) begin
 			xpos  <= 0;
 			ypos  <= ypos + 1;
 			
-			if(ypos >= (WIDTH-1)) vsync <= 1;
+			if(ypos >= (WIDTH+MARGIN+MARGIN-1)) vsync <= 1;
 		end
 	end
 end

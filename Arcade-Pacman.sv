@@ -113,7 +113,7 @@ assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DD
 assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
 assign {SDRAM_DQ, SDRAM_A, SDRAM_BA, SDRAM_CLK, SDRAM_CKE, SDRAM_DQML, SDRAM_DQMH, SDRAM_nWE, SDRAM_nCAS, SDRAM_nRAS, SDRAM_nCS} = 'Z;
 
-assign LED_USER  = 0;
+assign LED_USER  = ioctl_download;
 assign LED_DISK  = 0;
 assign LED_POWER = 0;
 
@@ -128,8 +128,8 @@ localparam CONF_STR = {
 	"O2,Orientation,Vert,Horz;",
 	"-;",
 	"T6,Reset;",
-	"J,Start 1P,Start 2P;",
-	"V,v1.00.",`BUILD_DATE
+	"J,Skip,Start 1P,Start 2P;",
+	"V,v2.00.",`BUILD_DATE
 };
 
 ////////////////////   CLOCKS   ///////////////////
@@ -158,6 +158,11 @@ end
 wire [31:0] status;
 wire  [1:0] buttons;
 
+wire        ioctl_download;
+wire        ioctl_wr;
+wire [24:0] ioctl_addr;
+wire  [7:0] ioctl_dout;
+
 wire [64:0] ps2_key;
 
 wire [15:0] joystick_0, joystick_1;
@@ -172,6 +177,11 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.buttons(buttons),
 	.status(status),
+
+	.ioctl_download(ioctl_download),
+	.ioctl_wr(ioctl_wr),
+	.ioctl_addr(ioctl_addr),
+	.ioctl_dout(ioctl_dout),
 
 	.joystick_0(joystick_0),
 	.joystick_1(joystick_1),
@@ -212,10 +222,10 @@ wire m_up     = status[2] ? btn_left  | joy[1] : btn_up    | joy[3];
 wire m_down   = status[2] ? btn_right | joy[0] : btn_down  | joy[2];
 wire m_left   = status[2] ? btn_down  | joy[2] : btn_left  | joy[1];
 wire m_right  = status[2] ? btn_up    | joy[3] : btn_right | joy[0];
-wire m_fire   = btn_fire;
+wire m_fire   = btn_fire | joy[4];
 
-wire m_start1 = btn_one_player  | joy[4];
-wire m_start2 = btn_two_players | joy[5];
+wire m_start1 = btn_one_player  | joy[5];
+wire m_start2 = btn_two_players | joy[6];
 wire m_coin   = m_start1 | m_start2;
 
 wire hblank, vblank;
@@ -243,7 +253,7 @@ assign HDMI_DE  = status[2] ? VGA_DE : rde;
 assign HDMI_HS  = status[2] ? VGA_HS : rhs;
 assign HDMI_VS  = status[2] ? VGA_VS : rvs;
 
-screen_rotate #(296,224,8) screen_rotate
+screen_rotate #(289,224,8) screen_rotate
 (
 	.clk_in(clk_sys),
 	.ce_in(ce_vid),
@@ -265,23 +275,29 @@ assign AUDIO_S = 0;
 
 pacman pacman
 (
-    .O_VIDEO_R(r),
-    .O_VIDEO_G(g),
-    .O_VIDEO_B(b),
-    .O_HSYNC(hs),
-    .O_VSYNC(vs),
-    .O_HBLANK(hblank),
-    .O_VBLANK(vblank),
+	.O_VIDEO_R(r),
+	.O_VIDEO_G(g),
+	.O_VIDEO_B(b),
+	.O_HSYNC(hs),
+	.O_VSYNC(vs),
+	.O_HBLANK(hblank),
+	.O_VBLANK(vblank),
 
-    .O_AUDIO(audio),
+	.dn_addr(ioctl_addr[15:0]),
+	.dn_data(ioctl_dout),
+	.dn_wr(ioctl_wr),
 
-	 .I_JOYSTICK_A(~{m_fire,m_right,m_left,m_down,m_up}),
-	 .I_JOYSTICK_B(5'b11111),
-	 
-    .I_SW({m_start2, m_coin, 1'b0, m_start1}),
-    .RESET(RESET | status[0] | status[6] | buttons[1]),
-	 .CLK(clk_sys),
-    .ENA_6(ce_6m)
+	.O_AUDIO(audio),
+
+	.in0(~{2'b00, m_coin, m_fire, m_down,m_right,m_left,m_up}),
+	.in1(~{1'b0, m_start2, m_start1, 5'b00000}),
+
+	.dipsw1(8'b1_1_00_11_01),
+	.dipsw2(8'b11111111),
+
+	.RESET(RESET | status[0] | status[6] | buttons[1]),
+	.CLK(clk_sys),
+	.ENA_6(ce_6m)
 );
 
 endmodule
