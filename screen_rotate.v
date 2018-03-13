@@ -1,7 +1,7 @@
 //============================================================================
 //
 //  Screen +90/-90 deg. rotation
-//  Copyright (C) 2017 Sorgelig
+//  Copyright (C) 2017,2018 Sorgelig
 //
 //  This program is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the Free
@@ -22,8 +22,9 @@
 // Output timings are incompatible with any TV/VGA mode.
 // The output is supposed to be send to VIP scaler input.
 //
-
-module screen_rotate #(parameter WIDTH=320, HEIGHT=240, DEPTH=8, MARGIN=8, CCW=0)
+// clk_out must be 4*(clk_in&ce_in) if DOUBLING is 1
+//
+module screen_rotate #(parameter WIDTH=320, HEIGHT=240, DEPTH=8, MARGIN=8, CCW=0, DOUBLING=1)
 (
 	input              clk_in,
 	input              ce_in,
@@ -108,7 +109,9 @@ assign de = ~(hsync | vsync);
 always @(posedge clk_out) begin
 	reg old_buff, old_buff2;
 	reg hs;
-	
+	reg prex = 0, prey = 0;
+	reg [aw-1:0] addr_sav;
+
 	integer xpos, ypos;
 	
 	old_buff <= buff;
@@ -116,30 +119,41 @@ always @(posedge clk_out) begin
 	
 	if(old_buff2 != old_buff) begin
 		addr_out <= old_buff ? {aw{1'b0}} : bufsize[aw-1:0];
+		addr_sav <= old_buff ? {aw{1'b0}} : bufsize[aw-1:0];
 		xpos <= 0;
 		ypos <= 0;
 		vsync <= 0;
+		prex <= 0;
+		prey <= 0;
 	end
-	
-	hsync <= hs; // delay one cycle!
 
 	if(~vsync) begin
 
-		hs <= (xpos >= HEIGHT);
-		if((ypos<MARGIN) || (ypos>=WIDTH+MARGIN)) begin
-			vout <= 0;
-		end else begin
-			vout <= out;
-			if(xpos < HEIGHT) addr_out <= addr_out + 1'd1;
-		end
+		if(DOUBLING) prex <= ~prex;
+		if(!DOUBLING || prex) begin
+			hsync <= (xpos >= HEIGHT);
+			if((ypos<MARGIN) || (ypos>=WIDTH+MARGIN)) begin
+				vout <= 0;
+			end else begin
+				vout <= out;
+				if(xpos < HEIGHT) addr_out <= addr_out + 1'd1;
+				if(xpos == HEIGHT) begin
+					if(DOUBLING) begin
+						prey <= ~prey;
+						if(~prey) addr_out <= addr_sav;
+						else addr_sav <= addr_out;
+					end
+				end
+			end
 
-		xpos <= xpos + 1;
+			xpos <= xpos + 1;
 
-		if(xpos > (HEIGHT + 10)) begin
-			xpos  <= 0;
-			ypos  <= ypos + 1;
-			
-			if(ypos >= (WIDTH+MARGIN+MARGIN-1)) vsync <= 1;
+			if(xpos > (HEIGHT + 2)) begin
+				xpos  <= 0;
+				if(~prey) ypos  <= ypos + 1;
+				
+				if(ypos >= (WIDTH+MARGIN+MARGIN-1)) vsync <= 1;
+			end
 		end
 	end
 end

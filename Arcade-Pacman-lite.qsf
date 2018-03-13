@@ -353,9 +353,9 @@ set_location_assignment PIN_W20 -to SW[3]
 
 set_global_assignment -name PRE_FLOW_SCRIPT_FILE "quartus_sh:sys/build_id.tcl"
 
-set_global_assignment -name CDF_FILE jtag_lite.cdf
+set_global_assignment -name CDF_FILE jtag.cdf
 set_global_assignment -name QIP_FILE sys/sys.qip
-set_global_assignment -name QIP_FILE sys/sysmem.qip
+
 set_global_assignment -name VHDL_FILE ROM/PROM7_DST.vhd
 set_global_assignment -name VHDL_FILE ROM/PROM4_DST.vhd
 set_global_assignment -name VHDL_FILE ROM/PROM1_DST.vhd
