@@ -12,7 +12,7 @@ end entity;
 architecture prom of PROM7_DST is
 	type rom is array(0 to  15) of std_logic_vector(7 downto 0);
 	signal rom_data: rom := (
-		X"00",X"3F",X"07",X"EF",X"F8",X"6F",X"38",X"C9",X"AF",X"AA",X"20",X"D5",X"BF",X"5D",X"ED",X"F6");
+		X"00",X"07",X"66",X"EF",X"00",X"F8",X"EA",X"6F",X"00",X"3F",X"00",X"C9",X"38",X"AA",X"AF",X"F6");
 begin
 process(clk)
 begin
