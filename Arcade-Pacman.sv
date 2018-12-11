@@ -93,7 +93,7 @@ localparam CONF_STR = {
 	"O34,Scanlines(vert),No,25%,50%,75%;",
 	"-;",
 	"T6,Reset;",
-	"J,Skip,Start 1P,Start 2P;",
+	"J,Skip,Start 2P,Start 1P,Coin;",
 	"V,v2.00.",`BUILD_DATE
 };
 
@@ -203,9 +203,9 @@ joyonedir jod
 
 wire m_fire   = btn_fire | joy[4];
 
-wire m_start1 = btn_one_player  | joy[5];
-wire m_start2 = btn_two_players | joy[6];
-wire m_coin   = btn_coin;
+wire m_start1 = btn_one_player  | joy[6];
+wire m_start2 = btn_two_players | joy[5];
+wire m_coin   = btn_coin | joy[7];
 
 wire hblank, vblank;
 wire ce_vid = ce_6m;
