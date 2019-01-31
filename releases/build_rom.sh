@@ -18,8 +18,8 @@ check_dependencies() {
 }
 
 check_permissions () {
-  if [ ! -w . ]; then
-    exit_with_error "Cannot write to\n$PWD"
+  if [ ! -w ${BASEDIR} ]; then
+    exit_with_error "Cannot write to\n${BASEDIR}"
   fi
 }
 
