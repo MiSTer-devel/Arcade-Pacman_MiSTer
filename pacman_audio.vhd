@@ -60,6 +60,10 @@ entity PACMAN_AUDIO is
     I_WR0_L           : in    std_logic;
     I_SOUND_ON        : in    std_logic;
     --
+	 dn_addr           : in  std_logic_vector(15 downto 0);
+	 dn_data           : in  std_logic_vector(7 downto 0);
+	 dn_wr             : in  std_logic;
+	 --
     O_AUDIO           : out   std_logic_vector(7 downto 0);
     ENA_6             : in    std_logic;
     CLK               : in    std_logic
@@ -81,6 +85,9 @@ architecture RTL of PACMAN_AUDIO is
 
   signal rom1m_addr    : std_logic_vector(7 downto 0);
   signal rom1m_data    : std_logic_vector(7 downto 0);
+  
+  signal prom_cs       : std_logic;
+  signal rom1m_cs      : std_logic;
 
 begin
   p_sel_com : process(I_HCNT, I_AB, I_DB, accum_reg)
@@ -186,13 +193,27 @@ begin
 
   end process;
 
-  audio_rom_1m : entity work.PROM1_DST
-    port map(
-      CLK         => CLK,
-      ADDR        => rom1m_addr,
-      DATA        => rom1m_data
-      );
+ -- audio_rom_1m : entity work.PROM1_DST
+ --   port map(
+ --     CLK         => CLK,
+ --     ADDR        => rom1m_addr,
+ --     DATA        => rom1m_data
+ --     );
+  prom_cs <= '1' when dn_addr(15 downto 14) = "11" else '0';
+  rom1m_cs <= '1' when dn_addr(9 downto 8) = "00" else '0';
 
+  audio_rom_1m : work.dpram generic map (8,8)
+  port map
+	(
+		clock_a   => CLK,
+		wren_a    => dn_wr and rom1m_cs and prom_cs,
+		address_a => dn_addr(7 downto 0),
+		data_a    => dn_data,
+	
+		clock_b   => CLK,
+		address_b => rom1m_addr,
+		q_b       => rom1m_data
+   );
   p_original_output_reg : process
   begin
     -- 2m used to use async clear

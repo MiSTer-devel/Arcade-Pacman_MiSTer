@@ -17,11 +17,14 @@
 --   F1          : Start Player 1
 --   F2          : Start Player 2
 --   F3		 : Coin Player 1
+--   F5          : Skip to next level
 --
---   Mame mapping :
---   1		 : Start Player 1
---   2		 : Start Player 2
---   5           : Coin Player 1
+-- MAME/IPAC/JPAC Style Keyboard inputs:
+--   5           : Coin 1
+--   6           : Coin 2
+--   1           : Start 1 Player
+--   2           : Start 2 Players
+--   R,F,D,G     : Player 2 Movements
 --
 --   UP,DOWN,LEFT,RIGHT arrows : Movements
 --
