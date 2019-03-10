@@ -248,14 +248,7 @@ port map
   );
 
 
---col_rom_4a : entity work.PROM4_DST
---port map
---(
---	ADDR(7)          => '0',
---	ADDR(6 downto 2) => vout_db(4 downto 0),
---	ADDR(1 downto 0) => shift_op(1 downto 0),
---	DATA             => lut_4a
---);
+
 
 u_sprite_ram : work.dpram generic map (8,6)
 port map
@@ -298,15 +291,6 @@ final_col <= (others => '0') when (vout_hblank = '1') or (I_VBLANK = '1') else
 				 lut_4a(3 downto 0);
 
 -- assign video outputs from color LUT PROM
---col_rom_7f : entity work.PROM7_DST
---port map
---(
---	CLK              => CLK,
---	ADDR(3 downto 0) => final_col,
---	DATA(2 downto 0) => O_RED,
---	DATA(5 downto 3) => O_GREEN,
---	DATA(7 downto 6) => O_BLUE
---);
 	rom7_cs <= '1' when dn_addr(9 downto 4) = "110000" else '0';
 
 	col_rom_7f : work.dpram generic map (4,8)

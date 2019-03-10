@@ -193,12 +193,6 @@ begin
 
   end process;
 
- -- audio_rom_1m : entity work.PROM1_DST
- --   port map(
- --     CLK         => CLK,
- --     ADDR        => rom1m_addr,
- --     DATA        => rom1m_data
- --     );
   prom_cs <= '1' when dn_addr(15 downto 14) = "11" else '0';
   rom1m_cs <= '1' when dn_addr(9 downto 8) = "00" else '0';
 
