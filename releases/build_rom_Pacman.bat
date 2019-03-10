@@ -1,7 +1,8 @@
 @echo off
 
 set    zip=puckmanb.zip
-set ifiles=namcopac.6e+namcopac.6f+namcopac.6h+namcopac.6j+namcopac.6e+namcopac.6f+namcopac.6h+namcopac.6j+pacman.5e+pacman.5f
+set ifiles=namcopac.6e+namcopac.6f+namcopac.6h+namcopac.6j+namcopac.6e+namcopac.6f+namcopac.6h+namcopac.6j+pacman.5e+pacman.5f+pacman.5f+pacman.5f+82s126.1m+82s126.4a+82s126.3m+82s123.7f)
+
 set  ofile=a.pacman.rom
 
 rem =====================================
