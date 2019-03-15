@@ -199,7 +199,7 @@ reg btn_up    = 0;
 reg btn_down  = 0;
 reg btn_right = 0;
 reg btn_left  = 0;
-reg btn_fire  = 0;
+reg btn_cheat  = 0;
 reg btn_one_player  = 0;
 reg btn_two_players = 0;
 reg btn_coin = 0;
@@ -213,7 +213,7 @@ reg btn_up_2=0;
 reg btn_down_2=0;
 reg btn_left_2=0;
 reg btn_right_2=0;
-reg btn_fire_2=0;
+reg btn_cheat_2=0;
 
 
 wire m_up,m_down,m_left,m_right;
@@ -243,7 +243,7 @@ joyonedir jod_2
 );
 
 
-wire m_fire   = btn_fire | joy[4];
+wire m_cheat = btn_fire | btn_fire_2 | btn_cheat | joy[4];
 
 
 wire m_start1 = btn_one_player  | joy[5];
@@ -300,7 +300,7 @@ pacman pacman
 
 	//.in0(~{2'b00, m_coin, m_fire, m_down,m_right,m_left,m_up}),
 	//.in1(~{1'b0, m_start2, m_start1, 5'b00000}),
-	.in0(~{2'b00,btn_coin_1, m_coin|btn_coin_2, btn_cheat| joy[4], m_down,m_right,m_left,m_up}),
+	.in0(~{2'b00,btn_coin_1, m_coin|btn_coin_2, m_cheat , m_down,m_right,m_left,m_up}),
 	.in1(~{status[12], m_start2|btn_start_2, m_start1|btn_start_1,1'b0,m_down_2,m_right_2,m_left_2,m_up_2}),
 
 	//.dipsw1(8'b1_1_00_11_01),
