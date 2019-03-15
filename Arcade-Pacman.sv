@@ -98,7 +98,7 @@ localparam CONF_STR = {
 	"OC,Cabinet,Upright,Cocktail;",
 	"-;",
 	"R0,Reset;",
-	"J,Skip,Start 1P,Start 2P,Coin;",
+	"J1,Skip,Start 1P,Start 2P,Coin;",
 	"V,v",`BUILD_DATE
 };
 
@@ -245,9 +245,11 @@ joyonedir jod_2
 
 wire m_fire   = btn_fire | joy[4];
 
-wire m_start1 = btn_one_player  | joy[5] | btn_start_1;
-wire m_start2 = btn_two_players | joy[6] | btn_start_2;
-wire m_coin   = btn_coin | joy[7];
+
+wire m_start1 = btn_one_player  | joy[5];
+wire m_start2 = btn_two_players | joy[6];
+  wire m_coin   = btn_coin | joy[7];
+
 
 wire hblank, vblank;
 wire ce_vid = ce_6m;
@@ -298,8 +300,8 @@ pacman pacman
 
 	//.in0(~{2'b00, m_coin, m_fire, m_down,m_right,m_left,m_up}),
 	//.in1(~{1'b0, m_start2, m_start1, 5'b00000}),
-	.in0(~{2'b00,btn_coin_1, m_coin|btn_coin_2, btn_cheat | joy[4], m_down,m_right,m_left,m_up}),
-	.in1(~{status[12], m_start2, m_start1,1'b0,m_down_2,m_right_2,m_left_2,m_up_2}),
+	.in0(~{2'b00,btn_coin_1, m_coin|btn_coin_2, btn_cheat| joy[4], m_down,m_right,m_left,m_up}),
+	.in1(~{status[12], m_start2|btn_start_2, m_start1|btn_start_1,1'b0,m_down_2,m_right_2,m_left_2,m_up_2}),
 
 	//.dipsw1(8'b1_1_00_11_01),
 	.dipsw1(m_dip),
