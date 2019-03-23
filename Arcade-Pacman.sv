@@ -96,6 +96,7 @@ localparam CONF_STR = {
 	"O89,Lives,3,5,1,2;",
 	"OAB,Bonus,10000,15000,20000,None;",
 	"OC,Cabinet,Upright,Cocktail;",
+	"OD,Alternate ghost names,No,Yes;",		
 	"-;",
 	"R0,Reset;",
 	"J1,Skip,Start 1P,Start 2P,Coin;",
@@ -199,11 +200,11 @@ reg btn_up    = 0;
 reg btn_down  = 0;
 reg btn_right = 0;
 reg btn_left  = 0;
-reg btn_cheat  = 0;
 reg btn_one_player  = 0;
 reg btn_two_players = 0;
 reg btn_coin = 0;
 reg btn_cheat = 0;
+reg btn_fire = 0;
 
 reg btn_start_1=0;
 reg btn_start_2=0;
@@ -214,7 +215,7 @@ reg btn_down_2=0;
 reg btn_left_2=0;
 reg btn_right_2=0;
 reg btn_cheat_2=0;
-
+reg btn_fire_2 = 0;
 
 wire m_up,m_down,m_left,m_right;
 joyonedir jod
@@ -248,7 +249,7 @@ wire m_cheat = btn_fire | btn_fire_2 | btn_cheat | joy[4];
 
 wire m_start1 = btn_one_player  | joy[5];
 wire m_start2 = btn_two_players | joy[6];
-  wire m_coin   = btn_coin | joy[7];
+wire m_coin   = btn_coin | joy[7];
 
 
 wire hblank, vblank;
@@ -280,7 +281,7 @@ assign AUDIO_L = {audio, audio};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
 
-wire [7:0]m_dip = {1'b0 , 1'b1,status[11:10],~status[9],status[8],1'b0,1'b1};
+wire [7:0]m_dip = {~status[13], 1'b1,status[11:10],~status[9],status[8],1'b0,1'b1};
 
 pacman pacman
 (
