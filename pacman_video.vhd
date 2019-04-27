@@ -120,10 +120,13 @@ architecture RTL of PACMAN_VIDEO is
 	signal final_col          : std_logic_vector(3 downto 0);
 
 	signal gfx_cs             : std_logic;
+	signal prom_cs            : std_logic;
+	signal rom7_cs            : std_logic;
+	signal rom4a_cs           : std_logic;
 
 begin
-
-gfx_cs  <= '1' when dn_addr(15 downto 14) = "10" else '0';
+prom_cs <= '1' when dn_addr(15 downto 14) = "11" else '0';
+gfx_cs  <= '1' when dn_addr(15 downto 13) = "100" else '0';
 
 dr <= not sprite_xy when I_HBLANK = '1' else "11111111"; -- pull ups on board
 
@@ -227,14 +230,25 @@ begin
 	end if;
 end process;
 
-col_rom_4a : entity work.PROM4_DST
+rom4a_cs <= '1' when dn_addr(9 downto 8) = "01" else '0';
+
+col_rom_4a : work.dpram generic map (8,8)
 port map
-(
-	ADDR(7)          => '0',
-	ADDR(6 downto 2) => vout_db(4 downto 0),
-	ADDR(1 downto 0) => shift_op(1 downto 0),
-	DATA             => lut_4a
-);
+	(
+		clock_a   => CLK,
+		wren_a    => dn_wr and rom4a_cs and prom_cs,
+		address_a => dn_addr(7 downto 0),
+		data_a    => dn_data,
+	
+		clock_b   => CLK,
+		address_b(7)          => '0',
+		address_b(6 downto 2) => vout_db(4 downto 0),
+		address_b(1 downto 0) => shift_op(1 downto 0),
+		q_b       => lut_4a
+  );
+
+
+
 
 u_sprite_ram : work.dpram generic map (8,6)
 port map
@@ -277,15 +291,22 @@ final_col <= (others => '0') when (vout_hblank = '1') or (I_VBLANK = '1') else
 				 lut_4a(3 downto 0);
 
 -- assign video outputs from color LUT PROM
-col_rom_7f : entity work.PROM7_DST
-port map
-(
-	CLK              => CLK,
-	ADDR(3 downto 0) => final_col,
-	DATA(2 downto 0) => O_RED,
-	DATA(5 downto 3) => O_GREEN,
-	DATA(7 downto 6) => O_BLUE
-);
+	rom7_cs <= '1' when dn_addr(9 downto 4) = "110000" else '0';
+
+	col_rom_7f : work.dpram generic map (4,8)
+	port map
+	(
+		clock_a   => CLK,
+		wren_a    => dn_wr and rom7_cs and prom_cs,
+		address_a => dn_addr(3 downto 0),
+		data_a    => dn_data,
+	
+		clock_b   => CLK,
+		address_b =>  final_col,
+		q_b(2 downto 0)   =>  O_RED,
+		q_b(5 downto 3)   =>  O_GREEN,
+		q_b(7 downto 6)   =>  O_BLUE
+  );
 
 O_HBLANK <= vout_hblank and vout_hblank_t1;
 

@@ -461,6 +461,10 @@ port map (
 	I_WR0_L       => iodec_sn1_l,
 	I_SOUND_ON    => control_reg(1),
 	--
+	dn_addr   => dn_addr,
+	dn_data   => dn_data,
+	dn_wr     => dn_wr,
+	--		
 	O_AUDIO       => O_AUDIO,
 	ENA_6         => ena_6,
 	CLK           => clk
