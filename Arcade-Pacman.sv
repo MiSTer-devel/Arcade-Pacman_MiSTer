@@ -97,6 +97,7 @@ localparam CONF_STR = {
 	"OAB,Bonus,10000,15000,20000,None;",
 	"OC,Cabinet,Upright,Cocktail;",
 	"OD,Alternate ghost names,No,Yes;",		
+	"0EF,Coins,1 Coin 1 Play, Free Play, 2 Coins 1 Play, 1 Coin 2 Play",
 	"-;",
 	"R0,Reset;",
 	"J1,Skip,Start 1P,Start 2P,Coin;",
@@ -281,7 +282,7 @@ assign AUDIO_L = {audio, audio};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
 
-wire [7:0]m_dip = {~status[13], 1'b1,status[11:10],~status[9],status[8],1'b0,1'b1};
+wire [7:0]m_dip = {~status[13], 1'b1,status[11:10],~status[9],status[8],~status[15],status[14]};
 
 pacman pacman
 (
