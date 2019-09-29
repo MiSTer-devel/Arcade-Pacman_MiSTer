@@ -180,7 +180,7 @@ module arcade_rotate_fx #(parameter WIDTH=320, HEIGHT=240, DW=8, CCW=0)
 	input         VSync,
 
 	output        VGA_CLK,
-	output        VGA_CE,
+	output reg    VGA_CE,
 	output  [7:0] VGA_R,
 	output  [7:0] VGA_G,
 	output  [7:0] VGA_B,
@@ -204,10 +204,15 @@ module arcade_rotate_fx #(parameter WIDTH=320, HEIGHT=240, DW=8, CCW=0)
 );
 
 assign VGA_CLK = clk_video;
-assign VGA_CE = ce_pix;
 assign VGA_HS = HSync;
 assign VGA_VS = VSync;
 assign VGA_DE = ~(HBlank | VBlank);
+
+always @(posedge VGA_CLK) begin
+	reg old_ce;
+	old_ce <= ce_pix;
+	VGA_CE <= ~old_ce & ce_pix;
+end
 
 generate
 	if(DW == 6) begin
@@ -330,7 +335,7 @@ module arcade_fx #(parameter WIDTH=320, DW=8)
 	input         VSync,
 
 	output        VGA_CLK,
-	output        VGA_CE,
+	output reg    VGA_CE,
 	output  [7:0] VGA_R,
 	output  [7:0] VGA_G,
 	output  [7:0] VGA_B,
@@ -353,10 +358,15 @@ module arcade_fx #(parameter WIDTH=320, DW=8)
 );
 
 assign VGA_CLK = clk_video;
-assign VGA_CE = ce_pix;
 assign VGA_HS = HSync;
 assign VGA_VS = VSync;
 assign VGA_DE = ~(HBlank | VBlank);
+
+always @(posedge VGA_CLK) begin
+	reg old_ce;
+	old_ce <= ce_pix;
+	VGA_CE <= ~old_ce & ce_pix;
+end
 
 generate
 	if(DW == 6) begin
