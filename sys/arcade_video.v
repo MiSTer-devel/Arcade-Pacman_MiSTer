@@ -204,14 +204,24 @@ module arcade_rotate_fx #(parameter WIDTH=320, HEIGHT=240, DW=8, CCW=0)
 );
 
 assign VGA_CLK = clk_video;
-assign VGA_HS = HSync;
-assign VGA_VS = VSync;
+assign VGA_HS = hs;
+assign VGA_VS = vs;
 assign VGA_DE = ~(HBlank | VBlank);
 
+wire hs_fix,vs_fix;
+sync_fix sync_v(VGA_CLK, HSync, hs_fix);
+sync_fix sync_h(VGA_CLK, VSync, vs_fix);
+
+reg hs,vs;
 always @(posedge VGA_CLK) begin
 	reg old_ce;
 	old_ce <= ce_pix;
-	VGA_CE <= ~old_ce & ce_pix;
+	VGA_CE <= 0;
+	if(~old_ce & ce_pix) begin
+		VGA_CE <= 1;
+		hs <= hs_fix;
+		if(~hs & hs_fix) vs <= vs_fix;
+	end
 end
 
 generate
@@ -300,8 +310,8 @@ video_mixer #(WIDTH+4, 1) video_mixer
 	.G(no_rotate ? VGA_G[7:4] : Gr),
 	.B(no_rotate ? VGA_B[7:4] : Br),
 
-	.HSync (no_rotate ? HSync  : rhs),
-	.VSync (no_rotate ? VSync  : rvs),
+	.HSync (no_rotate ? hs : rhs),
+	.VSync (no_rotate ? vs : rvs),
 	.HBlank(no_rotate ? HBlank : rhblank),
 	.VBlank(no_rotate ? VBlank : rvblank),
 
@@ -358,14 +368,24 @@ module arcade_fx #(parameter WIDTH=320, DW=8)
 );
 
 assign VGA_CLK = clk_video;
-assign VGA_HS = HSync;
-assign VGA_VS = VSync;
+assign VGA_HS = hs;
+assign VGA_VS = vs;
 assign VGA_DE = ~(HBlank | VBlank);
 
+wire hs_fix,vs_fix;
+sync_fix sync_v(VGA_CLK, HSync, hs_fix);
+sync_fix sync_h(VGA_CLK, VSync, vs_fix);
+
+reg hs,vs;
 always @(posedge VGA_CLK) begin
 	reg old_ce;
 	old_ce <= ce_pix;
-	VGA_CE <= ~old_ce & ce_pix;
+	VGA_CE <= 0;
+	if(~old_ce & ce_pix) begin
+		VGA_CE <= 1;
+		hs <= hs_fix;
+		if(~hs & hs_fix) vs <= vs_fix;
+	end
 end
 
 generate
@@ -409,8 +429,8 @@ video_mixer #(WIDTH+4, 1) video_mixer
 	.G(VGA_G[7:4]),
 	.B(VGA_B[7:4]),
 
-	.HSync(HSync),
-	.VSync(VSync),
+	.HSync(hs),
+	.VSync(vs),
 	.HBlank(HBlank),
 	.VBlank(VBlank),
 
