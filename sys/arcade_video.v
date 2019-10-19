@@ -260,7 +260,7 @@ screen_rotate #(WIDTH,HEIGHT,DW,4,CCW) rotator
 	.hblank(HBlank),
 	.vblank(VBlank),
 
-	.ce_out(VGA_CE | ~scandoubler),
+	.ce_out(VGA_CE | (~scandoubler & ~gamma_bus[19])),
 	.video_out(RGB_out),
 	.hsync(rhs),
 	.vsync(rvs),
@@ -301,7 +301,7 @@ wire scandoubler = fx || forced_scandoubler;
 video_mixer #(WIDTH+4, 1, 1) video_mixer
 (
 	.clk_vid(HDMI_CLK),
-	.ce_pix(VGA_CE | ~scandoubler),
+	.ce_pix(VGA_CE | (~scandoubler & ~gamma_bus[19])),
 	.ce_pix_out(HDMI_CE),
 
 	.scandoubler(scandoubler),
