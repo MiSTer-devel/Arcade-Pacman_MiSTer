@@ -22,7 +22,7 @@ module gamma_corr
 (* ramstyle="no_rw_check" *) reg [7:0] gamma_curve[768];
 
 always @(posedge clk_sys) if (gamma_wr) gamma_curve[gamma_wr_addr] <= gamma_value;
-always @(posedge clk_sys) gamma <= gamma_curve[gamma_index];
+always @(posedge clk_vid) gamma <= gamma_curve[gamma_index];
 
 reg [9:0] gamma_index;
 reg [7:0] gamma;
