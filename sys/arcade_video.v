@@ -168,7 +168,7 @@ endmodule
 //  9 : 3R 3G 3B
 // 12 : 4R 4G 4B
 
-module arcade_rotate_fx #(parameter WIDTH=320, HEIGHT=240, DW=8, CCW=0)
+module arcade_rotate_fx #(parameter WIDTH=320, HEIGHT=240, DW=8, CCW=0, GAMMA=1)
 (
 	input         clk_video,
 	input         ce_pix,
@@ -298,7 +298,7 @@ assign HDMI_SL  = no_rotate ? 2'd0 : sl[1:0];
 wire [2:0] sl = fx ? fx - 1'd1 : 3'd0;
 wire scandoubler = fx || forced_scandoubler;
 
-video_mixer #(WIDTH+4, 1, 1) video_mixer
+video_mixer #(WIDTH+4, 1, GAMMA) video_mixer
 (
 	.clk_vid(HDMI_CLK),
 	.ce_pix(VGA_CE | (~scandoubler & ~gamma_bus[19])),
@@ -335,7 +335,7 @@ endmodule
 //  9 : 3R 3G 3B
 // 12 : 4R 4G 4B
 
-module arcade_fx #(parameter WIDTH=320, DW=8)
+module arcade_fx #(parameter WIDTH=320, DW=8, GAMMA=1)
 (
 	input         clk_video,
 	input         ce_pix,
@@ -419,7 +419,7 @@ assign HDMI_SL  = sl[1:0];
 wire [2:0] sl = fx ? fx - 1'd1 : 3'd0;
 wire scandoubler = fx || forced_scandoubler;
 
-video_mixer #(WIDTH+4, 1, 1) video_mixer
+video_mixer #(WIDTH+4, 1, GAMMA) video_mixer
 (
 	.clk_vid(HDMI_CLK),
 	.ce_pix(VGA_CE),
