@@ -41,26 +41,18 @@ module screen_rotate #(parameter WIDTH=320, HEIGHT=240, DEPTH=8, MARGIN=4, CCW=0
 
 localparam bufsize = WIDTH*HEIGHT;
 localparam memsize = bufsize*2;
-localparam aw = memsize > 131072 ? 18 : memsize > 65536 ? 17 : 16; // resolutions up to ~ 512x256
+localparam aw = $clog2(memsize); // resolutions up to ~ 512x256
 
 reg [aw-1:0] addr_in, addr_out;
 reg we_in;
 reg buff = 0;
 
-rram #(aw, DEPTH, memsize) ram
-(
-	.wrclock(clk),
-	.wraddress(addr_in),
-	.data(video_in),
-	.wren(en_we),
-	
-	.rdclock(clk),
-	.rdaddress(addr_out),
-	.q(out)
-);
+(* ramstyle="no_rw_check" *) reg [DEPTH-1:0] ram[memsize];
+always @ (posedge clk) if (en_we) ram[addr_in] <= video_in;
+always @ (posedge clk) out <= ram[addr_out];
 
-wire [DEPTH-1:0] out; 
-reg  [DEPTH-1:0] vout;
+reg [DEPTH-1:0] out; 
+reg [DEPTH-1:0] vout;
 
 assign video_out = vout;
 
@@ -168,7 +160,7 @@ endmodule
 //  9 : 3R 3G 3B
 // 12 : 4R 4G 4B
 
-module arcade_rotate_fx #(parameter WIDTH=320, HEIGHT=240, DW=8, CCW=0)
+module arcade_rotate_fx #(parameter WIDTH=320, HEIGHT=240, DW=8, CCW=0, GAMMA=1)
 (
 	input         clk_video,
 	input         ce_pix,
@@ -200,18 +192,29 @@ module arcade_rotate_fx #(parameter WIDTH=320, HEIGHT=240, DW=8, CCW=0)
 	
 	input   [2:0] fx,
 	input         forced_scandoubler,
-	input         no_rotate
+	input         no_rotate,
+	inout  [21:0] gamma_bus
 );
 
 assign VGA_CLK = clk_video;
-assign VGA_HS = HSync;
-assign VGA_VS = VSync;
+assign VGA_HS = hs;
+assign VGA_VS = vs;
 assign VGA_DE = ~(HBlank | VBlank);
 
+wire hs_fix,vs_fix;
+sync_fix sync_v(VGA_CLK, HSync, hs_fix);
+sync_fix sync_h(VGA_CLK, VSync, vs_fix);
+
+reg hs,vs;
 always @(posedge VGA_CLK) begin
 	reg old_ce;
 	old_ce <= ce_pix;
-	VGA_CE <= ~old_ce & ce_pix;
+	VGA_CE <= 0;
+	if(~old_ce & ce_pix) begin
+		VGA_CE <= 1;
+		hs <= hs_fix;
+		if(~hs & hs_fix) vs <= vs_fix;
+	end
 end
 
 generate
@@ -249,7 +252,7 @@ screen_rotate #(WIDTH,HEIGHT,DW,4,CCW) rotator
 	.hblank(HBlank),
 	.vblank(VBlank),
 
-	.ce_out(VGA_CE | ~scandoubler),
+	.ce_out(VGA_CE | (~scandoubler & ~gamma_bus[19])),
 	.video_out(RGB_out),
 	.hsync(rhs),
 	.vsync(rvs),
@@ -287,21 +290,22 @@ assign HDMI_SL  = no_rotate ? 2'd0 : sl[1:0];
 wire [2:0] sl = fx ? fx - 1'd1 : 3'd0;
 wire scandoubler = fx || forced_scandoubler;
 
-video_mixer #(WIDTH+4, 1) video_mixer
+video_mixer #(WIDTH+4, 1, GAMMA) video_mixer
 (
-	.clk_sys(HDMI_CLK),
-	.ce_pix(VGA_CE | ~scandoubler),
+	.clk_vid(HDMI_CLK),
+	.ce_pix(VGA_CE | (~scandoubler & ~gamma_bus[19])),
 	.ce_pix_out(HDMI_CE),
 
 	.scandoubler(scandoubler),
 	.hq2x(fx==1),
+	.gamma_bus(gamma_bus),
 
 	.R(no_rotate ? VGA_R[7:4] : Rr),
 	.G(no_rotate ? VGA_G[7:4] : Gr),
 	.B(no_rotate ? VGA_B[7:4] : Br),
 
-	.HSync (no_rotate ? HSync  : rhs),
-	.VSync (no_rotate ? VSync  : rvs),
+	.HSync (no_rotate ? hs : rhs),
+	.VSync (no_rotate ? vs : rvs),
 	.HBlank(no_rotate ? HBlank : rhblank),
 	.VBlank(no_rotate ? VBlank : rvblank),
 
@@ -323,7 +327,7 @@ endmodule
 //  9 : 3R 3G 3B
 // 12 : 4R 4G 4B
 
-module arcade_fx #(parameter WIDTH=320, DW=8)
+module arcade_fx #(parameter WIDTH=320, DW=8, GAMMA=1)
 (
 	input         clk_video,
 	input         ce_pix,
@@ -354,18 +358,29 @@ module arcade_fx #(parameter WIDTH=320, DW=8)
 	output  [1:0] HDMI_SL,
 	
 	input   [2:0] fx,
-	input         forced_scandoubler
+	input         forced_scandoubler,
+	inout  [21:0] gamma_bus
 );
 
 assign VGA_CLK = clk_video;
-assign VGA_HS = HSync;
-assign VGA_VS = VSync;
+assign VGA_HS = hs;
+assign VGA_VS = vs;
 assign VGA_DE = ~(HBlank | VBlank);
 
+wire hs_fix,vs_fix;
+sync_fix sync_v(VGA_CLK, HSync, hs_fix);
+sync_fix sync_h(VGA_CLK, VSync, vs_fix);
+
+reg hs,vs;
 always @(posedge VGA_CLK) begin
 	reg old_ce;
 	old_ce <= ce_pix;
-	VGA_CE <= ~old_ce & ce_pix;
+	VGA_CE <= 0;
+	if(~old_ce & ce_pix) begin
+		VGA_CE <= 1;
+		hs <= hs_fix;
+		if(~hs & hs_fix) vs <= vs_fix;
+	end
 end
 
 generate
@@ -396,21 +411,22 @@ assign HDMI_SL  = sl[1:0];
 wire [2:0] sl = fx ? fx - 1'd1 : 3'd0;
 wire scandoubler = fx || forced_scandoubler;
 
-video_mixer #(WIDTH+4, 1) video_mixer
+video_mixer #(WIDTH+4, 1, GAMMA) video_mixer
 (
-	.clk_sys(HDMI_CLK),
+	.clk_vid(HDMI_CLK),
 	.ce_pix(VGA_CE),
 	.ce_pix_out(HDMI_CE),
 
 	.scandoubler(scandoubler),
 	.hq2x(fx==1),
+	.gamma_bus(gamma_bus),
 
 	.R(VGA_R[7:4]),
 	.G(VGA_G[7:4]),
 	.B(VGA_B[7:4]),
 
-	.HSync(HSync),
-	.VSync(VSync),
+	.HSync(hs),
+	.VSync(vs),
 	.HBlank(HBlank),
 	.VBlank(VBlank),
 
@@ -421,68 +437,5 @@ video_mixer #(WIDTH+4, 1) video_mixer
 	.VGA_HS(HDMI_HS),
 	.VGA_DE(HDMI_DE)
 );
-
-endmodule
-
-//////////////////////////////////////////////////////////
-
-module rram #(parameter AW=16, DW=8, NW=1<<AW)
-(
-	input           wrclock,
-	input  [AW-1:0] wraddress,
-	input  [DW-1:0] data,
-	input           wren,
-
-	input	          rdclock,
-	input	 [AW-1:0] rdaddress,
-	output [DW-1:0] q
-);
-
-altsyncram	altsyncram_component
-(
-	.address_a (wraddress),
-	.address_b (rdaddress),
-	.clock0 (wrclock),
-	.clock1 (rdclock),
-	.data_a (data),
-	.wren_a (wren),
-	.q_b (q),
-	.aclr0 (1'b0),
-	.aclr1 (1'b0),
-	.addressstall_a(1'b0),
-	.addressstall_b(1'b0),
-	.byteena_a(1'b1),
-	.byteena_b(1'b1),
-	.clocken0(1'b1),
-	.clocken1(1'b1),
-	.clocken2(1'b1),
-	.clocken3(1'b1),
-	.data_b({DW{1'b0}}),
-	.eccstatus (),
-	.q_a(),
-	.rden_a (1'b1),
-	.rden_b (1'b1),
-	.wren_b(1'b0)
-);
-
-defparam
-	altsyncram_component.address_aclr_b = "NONE",
-	altsyncram_component.address_reg_b = "CLOCK1",
-	altsyncram_component.clock_enable_input_a = "BYPASS",
-	altsyncram_component.clock_enable_input_b = "BYPASS",
-	altsyncram_component.clock_enable_output_b = "BYPASS",
-	altsyncram_component.intended_device_family = "Cyclone V",
-	altsyncram_component.lpm_type = "altsyncram",
-	altsyncram_component.numwords_a = NW,
-	altsyncram_component.numwords_b = NW,
-	altsyncram_component.operation_mode = "DUAL_PORT",
-	altsyncram_component.outdata_aclr_b = "NONE",
-	altsyncram_component.outdata_reg_b = "UNREGISTERED",
-	altsyncram_component.power_up_uninitialized = "FALSE",
-	altsyncram_component.widthad_a = AW,
-	altsyncram_component.widthad_b = AW,
-	altsyncram_component.width_a = DW,
-	altsyncram_component.width_b = DW,
-	altsyncram_component.width_byteena_a = 1;
 
 endmodule
