@@ -98,8 +98,6 @@ assign HDMI_ARY = status[1] ? 8'd9  : status[2] ? 8'd3 : 8'd4;
 `include "build_id.v" 
 localparam CONF_STR = {
 	"A.PACMAN;;",
-	"F,rom;", // allow loading of alternate ROMs
-	"-;",
 	"O1,Aspect Ratio,Original,Wide;",
 	"O2,Orientation,Vert,Horz;",
 	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
