@@ -446,6 +446,20 @@ sysmem_lite sysmem
 	//DE10-nano has no reset signal on GPIO, so core has to emulate cold reset button.
 	.reset_hps_cold_req(btn_r),
 
+`ifdef USE_DDRAM
+	//64-bit DDR3 RAM access
+	.ram1_clk(ram_clk),
+	.ram1_address(ram_address),
+	.ram1_burstcount(ram_burstcount),
+	.ram1_waitrequest(ram_waitrequest),
+	.ram1_readdata(ram_readdata),
+	.ram1_readdatavalid(ram_readdatavalid),
+	.ram1_read(ram_read),
+	.ram1_writedata(ram_writedata),
+	.ram1_byteenable(ram_byteenable),
+	.ram1_write(ram_write),
+`endif
+
 	//64-bit DDR3 RAM access
 	.ram2_clk(clk_audio),
 	.ram2_address((ap_en1 == ap_en2) ? aram_address : pram_address),
@@ -1100,6 +1114,20 @@ wire        clk_sys, clk_vid, ce_pix;
 wire  [7:0] hr_out, hg_out, hb_out;
 wire        hvs_fix, hhs_fix, hde_emu, hvs_emu, hhs_emu;
 wire        clk_ihdmi, ce_hpix;
+
+`ifdef USE_DDRAM
+wire        ram_clk;
+wire [28:0] ram_address;
+wire [7:0]  ram_burstcount;
+wire        ram_waitrequest;
+wire [63:0] ram_readdata;
+wire        ram_readdatavalid;
+wire        ram_read;
+wire [63:0] ram_writedata;
+wire [7:0]  ram_byteenable;
+wire        ram_write;
+`endif
+
 wire        led_user;
 wire  [1:0] led_power;
 wire  [1:0] led_disk;
@@ -1110,13 +1138,12 @@ sync_fix sync_v(clk_vid, vs_emu, vs_fix);
 sync_fix sync_h(clk_vid, hs_emu, hs_fix);
 
 assign audio_mix = 0;
-assign {SDRAM_DQ, SDRAM_A, SDRAM_BA, SDRAM_CLK, SDRAM_CKE, SDRAM_DQML, SDRAM_DQMH, SDRAM_nWE, SDRAM_nCAS, SDRAM_nRAS, SDRAM_nCS} = {39{1'bZ}};
-`ifdef DUAL_SDRAM
-	assign {SDRAM2_DQ, SDRAM2_A, SDRAM2_BA, SDRAM2_CLK, SDRAM2_nWE, SDRAM2_nCAS, SDRAM2_nRAS, SDRAM2_nCS} = {36{1'bZ}};
-`endif
 assign {ADC_SCK, ADC_SDI, ADC_CONVST} = 0;
-
 wire  [6:0] user_out, user_in;
+
+`ifndef USE_SDRAM
+assign {SDRAM_DQ, SDRAM_A, SDRAM_BA, SDRAM_CLK, SDRAM_CKE, SDRAM_DQML, SDRAM_DQMH, SDRAM_nWE, SDRAM_nCAS, SDRAM_nRAS, SDRAM_nCS} = {39'bZ};
+`endif
 
 emu emu
 (
@@ -1153,6 +1180,46 @@ emu emu
 	.AUDIO_L(audio_ls),
 	.AUDIO_R(audio_rs),
 	.AUDIO_S(audio_s),
+
+`ifdef USE_DDRAM
+	.DDRAM_CLK(ram_clk),
+	.DDRAM_ADDR(ram_address),
+	.DDRAM_BURSTCNT(ram_burstcount),
+	.DDRAM_BUSY(ram_waitrequest),
+	.DDRAM_DOUT(ram_readdata),
+	.DDRAM_DOUT_READY(ram_readdatavalid),
+	.DDRAM_RD(ram_read),
+	.DDRAM_DIN(ram_writedata),
+	.DDRAM_BE(ram_byteenable),
+	.DDRAM_WE(ram_write),
+`endif
+
+`ifdef USE_SDRAM
+	.SDRAM_DQ(SDRAM_DQ),
+	.SDRAM_A(SDRAM_A),
+	.SDRAM_DQML(SDRAM_DQML),
+	.SDRAM_DQMH(SDRAM_DQMH),
+	.SDRAM_BA(SDRAM_BA),
+	.SDRAM_nCS(SDRAM_nCS),
+	.SDRAM_nWE(SDRAM_nWE),
+	.SDRAM_nRAS(SDRAM_nRAS),
+	.SDRAM_nCAS(SDRAM_nCAS),
+	.SDRAM_CLK(SDRAM_CLK),
+	.SDRAM_CKE(SDRAM_CKE),
+`endif
+
+`ifdef DUAL_SDRAM
+	.SDRAM2_DQ(SDRAM2_DQ),
+	.SDRAM2_A(SDRAM2_A),
+	.SDRAM2_BA(SDRAM2_BA),
+	.SDRAM2_nCS(SDRAM2_nCS),
+	.SDRAM2_nWE(SDRAM2_nWE),
+	.SDRAM2_nRAS(SDRAM2_nRAS),
+	.SDRAM2_nCAS(SDRAM2_nCAS),
+	.SDRAM2_CLK(SDRAM2_CLK),
+	.SDRAM2_EN(SW[3]),
+`endif
+
 	.USER_OUT(user_out),
 	.USER_IN(user_in)
 );
