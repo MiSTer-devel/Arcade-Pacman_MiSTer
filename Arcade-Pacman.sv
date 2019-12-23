@@ -98,10 +98,8 @@ assign HDMI_ARY = status[1] ? 8'd9  : status[2] ? 8'd3 : 8'd4;
 `include "build_id.v" 
 localparam CONF_STR = {
 	"A.PACMAN;;",
-	"F,rom;", // allow loading of alternate ROMs
-	"-;",
-	"O1,Aspect Ratio,Original,Wide;",
-	"O2,Orientation,Vert,Horz;",
+	"H0O1,Aspect Ratio,Original,Wide;",
+	"H0O2,Orientation,Vert,Horz;",
 	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
 	"O89,Lives,3,5,1,2;",
@@ -117,14 +115,15 @@ localparam CONF_STR = {
 
 ////////////////////   CLOCKS   ///////////////////
 
-wire clk_sys, clk_snd;
+wire clk_sys, clk_vid;
 wire pll_locked;
 
 pll pll
 (
 	.refclk(CLK_50M),
 	.rst(0),
-	.outclk_0(clk_sys),
+	.outclk_0(clk_vid),
+	.outclk_1(clk_sys),
 	.locked(pll_locked)
 );
 
@@ -141,6 +140,7 @@ end
 wire [31:0] status;
 wire  [1:0] buttons;
 wire        forced_scandoubler;
+wire        direct_video;
 
 wire        ioctl_download;
 wire        ioctl_wr;
@@ -163,8 +163,10 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.buttons(buttons),
 	.status(status),
+	.status_menumask(direct_video),
 	.forced_scandoubler(forced_scandoubler),
 	.gamma_bus(gamma_bus),
+	.direct_video(direct_video),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_wr(ioctl_wr),
@@ -232,15 +234,17 @@ reg btn_right_2=0;
 reg btn_cheat_2=0;
 reg btn_fire_2 = 0;
 
+wire no_rotate = status[2] & ~direct_video;
+
 wire m_up,m_down,m_left,m_right;
 joyonedir jod
 (
 	clk_sys,
 	{
-		status[2] ? btn_left  | joy[1] : btn_up    | joy[3],
-		status[2] ? btn_right | joy[0] : btn_down  | joy[2],
-		status[2] ? btn_down  | joy[2] : btn_left  | joy[1],
-		status[2] ? btn_up    | joy[3] : btn_right | joy[0]
+		no_rotate ? btn_left  | joy[1] : btn_up    | joy[3],
+		no_rotate ? btn_right | joy[0] : btn_down  | joy[2],
+		no_rotate ? btn_down  | joy[2] : btn_left  | joy[1],
+		no_rotate ? btn_up    | joy[3] : btn_right | joy[0]
 	},
 	{m_up,m_down,m_left,m_right}
 );
@@ -250,10 +254,10 @@ joyonedir jod_2
 (
 	clk_sys,
 	{
-		status[2] ? btn_left_2  | joy[1] : btn_up_2    | joy[3],
-		status[2] ? btn_right_2 | joy[0] : btn_down_2  | joy[2],
-		status[2] ? btn_down_2  | joy[2] : btn_left_2  | joy[1],
-		status[2] ? btn_up_2    | joy[3] : btn_right_2 | joy[0]
+		no_rotate ? btn_left_2  | joy[1] : btn_up_2    | joy[3],
+		no_rotate ? btn_right_2 | joy[0] : btn_down_2  | joy[2],
+		no_rotate ? btn_down_2  | joy[2] : btn_left_2  | joy[1],
+		no_rotate ? btn_up_2    | joy[3] : btn_right_2 | joy[0]
 	},
 	{m_up_2,m_down_2,m_left_2,m_right_2}
 );
@@ -276,19 +280,18 @@ wire [1:0] b;
 
 arcade_rotate_fx #(289,224,8) arcade_video
 (
-        .*,
+	.*,
 
-        .clk_video(clk_sys),
-        .ce_pix(ce_vid),
+	.clk_video(clk_vid),
+	.ce_pix(ce_vid),
 
-        .RGB_in({r,g,b}),
-        .HBlank(hblank),
-        .VBlank(vblank),
-        .HSync(hs),
-        .VSync(vs),
+	.RGB_in({r,g,b}),
+	.HBlank(hblank),
+	.VBlank(vblank),
+	.HSync(hs),
+	.VSync(vs),
 
-        .fx(status[5:3]),
-        .no_rotate(status[2])
+	.fx(status[5:3])
 );
 
 wire [7:0] audio;
