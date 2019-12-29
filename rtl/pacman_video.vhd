@@ -49,9 +49,6 @@ library ieee;
 library UNISIM;
 
 entity PACMAN_VIDEO is
-generic (
-	MRTNT  : std_logic := '0'  -- 1 to descramble Mr TNT ROMs, 0 otherwise
-);
 port (
 	I_HCNT            : in    std_logic_vector(8 downto 0);
 	I_VCNT            : in    std_logic_vector(8 downto 0);
@@ -71,6 +68,7 @@ port (
 	O_RED             : out   std_logic_vector(2 downto 0);
 	O_GREEN           : out   std_logic_vector(2 downto 0);
 	O_BLUE            : out   std_logic_vector(1 downto 0);
+	MRTNT             : in    std_logic := '0';  -- 1 to descramble Mr TNT ROMs, 0 otherwise
 	ENA_6             : in    std_logic;
 	CLK               : in    std_logic
 );
@@ -192,7 +190,7 @@ gfx_cs  <= '1' when dn_addr(15 downto 13) = "100" else '0';
 
 	p_char_addr_comb : process(db_reg, I_HCNT,
 										char_match_reg, char_sum_reg, char_hblank_reg,
-										xflip, yflip)
+										xflip, yflip, MRTNT)
 	begin
 		obj_on <= char_match_reg or I_HCNT(8); -- 256h not 256h_l
 

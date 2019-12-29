@@ -104,16 +104,16 @@ localparam CONF_STR = {
 	"-;",
 	"-,DIP Switches:;",
 	"-;",
-	"h1O8,Lives,3,5;",                      // club
-	"h4O89,Lives,3,5,1,2;",                 // pacman/plus
-	"h1OAB,Bonus,20000,40000,80000,None;",  // club
-	"h4OAB,Bonus,10000,15000,20000,None;",  // pacman/plus
-	"h2OGH,Lives,3,4,5,6;",                 // crush roller
-	"h3OKL,Lives,1,2,3,4;",                 // birdiy
-	"h2OI,First Pattern,Easy,Hard;",        // crush roller
-	"h2OJ,Teleport Holes,On,Off;",          // crush roller
-	"H3OC,Cabinet,Upright,Cocktail;",       // not birdiy
-	"h4OD,Ghost names,Standard,Alternate;", // pacman/plus
+	"h1O8,Lives,3,5;",                        // club
+	"h4O89,Lives,3,5,1,2;",                   // pacman/plus
+	"h1OAB,Bonus,20000,40000,80000,None;",    // club
+	"h4OAB,Bonus,10000,15000,20000,None;",    // pacman/plus
+	"h2OGH,Lives,3,4,5,6;",                   // crush roller
+	"h3OKL,Lives,1,2,3,4;",                   // birdiy
+	"h2OI,First Pattern,Easy,Hard;",          // crush roller
+	"h2OJ,Teleport Holes,On,Off;",            // crush roller
+	"H3OC,Cabinet,Upright,Cocktail;",         // not birdiy
+	"h4OD,Ghost names,Standard,Alternative;", // pacman/plus
 	"OEF,Coins,1 Coin 2 Play, 2 Coins 1 Play, Free Play, 1 Coin 1 Play;", // all
 	"-;",
 	"R0,Reset;",
@@ -173,7 +173,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.buttons(buttons),
 	.status(status),
-	.status_menumask({mod_orig|mod_plus,mod_bird,mod_crush,mod_club,direct_video}),
+	.status_menumask({mod_orig|mod_plus|mod_ms,mod_bird,mod_crush,mod_club,direct_video}),
 	.forced_scandoubler(forced_scandoubler),
 	.gamma_bus(gamma_bus),
 	.direct_video(direct_video),
@@ -194,6 +194,7 @@ reg mod_club = 0;
 reg mod_orig = 0;
 reg mod_crush= 0;
 reg mod_bird = 0;
+reg mod_ms   = 0;
 always @(posedge clk_sys) begin
 	reg [7:0] mod = 0;
 	if (ioctl_wr & (ioctl_index==1)) mod <= ioctl_dout[7:0];
@@ -203,6 +204,7 @@ always @(posedge clk_sys) begin
 	mod_club <= (mod == 2);
 	mod_crush<= (mod == 3);
 	mod_bird <= (mod == 4);
+	mod_ms   <= (mod == 5);
 end
 
 wire       pressed = ps2_key[9];
@@ -351,6 +353,7 @@ pacman pacman
 
 	.mod_plus(mod_plus),
 	.mod_bird(mod_bird),
+	.mod_ms(mod_ms),
 
 	.in_a({m_down,m_right,m_left,m_up} | (mod_club ? 4'b0000 : {m_down_2,m_right_2,m_left_2,m_up_2})),
 	.in_b(mod_club ? {m_down_2,m_right_2,m_left_2,m_up_2} : {m_down,m_right,m_left,m_up}),

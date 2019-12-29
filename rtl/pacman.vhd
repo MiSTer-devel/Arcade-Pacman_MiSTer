@@ -52,9 +52,6 @@ library ieee;
 library UNISIM;
 
 entity PACMAN is
-generic (
-	MRTNT  : std_logic := '0'  -- 1 to descramble Mr TNT ROMs, 0 otherwise
-);
 port
 (
 	O_VIDEO_R  : out std_logic_vector(2 downto 0);
@@ -73,6 +70,8 @@ port
 	--
 	mod_plus   : in  std_logic;
 	mod_bird   : in  std_logic;
+	mod_mrtnt  : in  std_logic;
+	mod_ms     : in  std_logic;
 	--
 	in_a       : in  std_logic_vector(3 downto 0);
 	in_b       : in  std_logic_vector(3 downto 0);
@@ -115,11 +114,8 @@ architecture RTL of PACMAN is
     signal cpu_data_out     : std_logic_vector(7 downto 0);
     signal cpu_data_in      : std_logic_vector(7 downto 0);
 
-    signal rom_data_out     : std_logic_vector(7 downto 0);
     signal rom_data         : std_logic_vector(7 downto 0);
 
-    signal program_rom_dinl : std_logic_vector(7 downto 0);
-    signal program_rom_dinh : std_logic_vector(7 downto 0);
     signal sync_bus_cs_l    : std_logic;
 
     signal control_reg      : std_logic_vector(7 downto 0);
@@ -127,8 +123,6 @@ architecture RTL of PACMAN is
     signal c_int            : std_logic;
     signal c_sound          : std_logic;
 
-	 
-    --
     signal vram_addr_ab     : std_logic_vector(11 downto 0);
     signal ab               : std_logic_vector(11 downto 0);
 
@@ -158,24 +152,8 @@ architecture RTL of PACMAN is
     -- watchdog
     signal watchdog_cnt     : std_logic_vector(7 downto 0);
     signal watchdog_reset_l : std_logic;
-
-    signal rom0_cs,rom1_cs  : std_logic;
-
-	type mtd_t is array(0 to 31) of std_logic_vector(3 downto 0);
-	signal picktbl: mtd_t := (
-		X"0",X"2",X"4",X"2",X"4",X"0",X"4",X"2",X"2",X"0",X"2",X"2",X"4",X"0",X"4",X"2",
-		X"2",X"2",X"4",X"0",X"4",X"2",X"4",X"0",X"0",X"4",X"0",X"4",X"4",X"2",X"4",X"2"
-	);
-	
-	signal r                : std_logic_vector(7 downto 0);
-	signal mtd_addr         : std_logic_vector(4 downto 0);
-	signal method           : std_logic_vector(3 downto 0);
-
 begin
 
-rom0_cs <= '1' when dn_addr(15 downto 14) = "00" else '0';
-rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
-  
   --
   -- video timing
   --
@@ -552,11 +530,8 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
          not in_b when control_reg(5 downto 4) = "10" else
          not (in_a or in_b);
 
-  rom_data <= program_rom_dinl when cpu_addr(15) = '0' else program_rom_dinh;
-  rom_data_out <= rom_data(7 downto 6) & rom_data(3) & rom_data(4) & rom_data(5) & rom_data(2 downto 0) when MRTNT = '1' else rom_data;
-
   p_cpu_data_in_mux_comb : process(cpu_addr, cpu_iorq_l, cpu_m1_l, sync_bus_wreq_l,
-                                   iodec_in0_l, iodec_in1_l, iodec_dipsw_l, cpu_vec_reg, sync_bus_reg, rom_data_out,
+                                   iodec_in0_l, iodec_in1_l, iodec_dipsw_l, cpu_vec_reg, sync_bus_reg, rom_data,
 											  rams_data_out, in0_reg, in1_reg, dipsw_reg, inj, iodec_dipsw2_l)
   begin
     -- simplifed again
@@ -565,8 +540,8 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
     elsif (sync_bus_wreq_l = '0') then
       cpu_data_in <= sync_bus_reg;
     else
-      if (cpu_addr(14) = '0') then      -- ROM at 0000 - 3fff, 8000 - 9fff
-        cpu_data_in <= rom_data_out;
+      if (cpu_addr(14) = '0') then      -- ROM at 0000 - 3fff, 8000 - bfff
+        cpu_data_in <= rom_data;
       else
         cpu_data_in <= rams_data_out;
         if (iodec_in0_l   = '0') then cpu_data_in <= in0_reg & inj; end if;
@@ -591,71 +566,47 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
 		q_b       => rams_data_out
 	);
 
-	mtd_addr <= cpu_addr(9) & cpu_addr(7) & cpu_addr(5) & cpu_addr(2) & cpu_addr(0);
-	method <= picktbl(to_integer(unsigned(mtd_addr))) xor ("000" & cpu_addr(11));
-
-	program_rom_dinl <= (r(7)&r(6)&r(5)&r(4)&r(3)&r(2)&r(1)&r(0)) xor X"00" when method = X"0" or mod_plus = '0' else
-							  (r(7)&r(6)&r(5)&r(4)&r(3)&r(2)&r(1)&r(0)) xor X"28" when method = X"1" else
-							  (r(6)&r(1)&r(3)&r(2)&r(5)&r(7)&r(0)&r(4)) xor X"96" when method = X"2" else
-							  (r(6)&r(1)&r(5)&r(2)&r(3)&r(7)&r(0)&r(4)) xor X"be" when method = X"3" else
-							  (r(0)&r(3)&r(7)&r(6)&r(4)&r(2)&r(1)&r(5)) xor X"d5" when method = X"4" else
-							  (r(0)&r(3)&r(4)&r(6)&r(7)&r(2)&r(1)&r(5)) xor X"dd";
-
-	u_program_rom0 : work.dpram generic map (14,8)
-	port map
-	(
-		clock_a   => clk,
-		wren_a    => dn_wr and rom0_cs,
-		address_a => dn_addr(13 downto 0),
-		data_a    => dn_data,
-	
-		clock_b   => clk,
-		address_b => cpu_addr(13 downto 0),
-		q_b       => r
+	u_program_rom: work.rom_descrambler
+	port map(
+		CLK      => clk,
+		MRTNT    => mod_mrtnt,
+		MSPACMAN => mod_ms,
+		PLUS     => mod_plus,
+		cpu_m1_l => cpu_m1_l, 
+		addr     => cpu_addr,
+		data     => rom_data,
+		dn_addr  => dn_addr,
+		dn_data  => dn_data,
+		dn_wr    => dn_wr
 	);
 	
-	u_program_rom1 : work.dpram generic map (14,8)
-	port map
-	(
-		clock_a   => clk,
-		wren_a    => dn_wr and rom1_cs,
-		address_a => dn_addr(13 downto 0),
-		data_a    => dn_data,
-	
-		clock_b   => clk,
-		address_b => cpu_addr(13 downto 0),
-		q_b       => program_rom_dinh
-	);
-
   --
   -- video subsystem
   --
   u_video : entity work.PACMAN_VIDEO
-	generic map (
-		MRTNT  => MRTNT
-	)
     port map (
-      I_HCNT        => hcnt,
-      I_VCNT        => vcnt,
+      I_HCNT    => hcnt,
+      I_VCNT    => vcnt,
       --
-      I_AB          => ab,
-      I_DB          => sync_bus_db,
+      I_AB      => ab,
+      I_DB      => sync_bus_db,
       --
-      I_HBLANK      => hblank,
-      I_VBLANK      => vblank,
-      I_FLIP        => c_flip,
-      I_WR2_L       => wr2_l,
-	--
-	dn_addr   => dn_addr,
-	dn_data   => dn_data,
-	dn_wr     => dn_wr,
+      I_HBLANK  => hblank,
+      I_VBLANK  => vblank,
+      I_FLIP    => c_flip,
+      I_WR2_L   => wr2_l,
       --
-      O_RED         => O_VIDEO_R,
-      O_GREEN       => O_VIDEO_G,
-      O_BLUE        => O_VIDEO_B,
+      dn_addr   => dn_addr,
+      dn_data   => dn_data,
+      dn_wr     => dn_wr,
       --
-      ENA_6         => ena_6,
-      CLK           => clk
+      O_RED     => O_VIDEO_R,
+      O_GREEN   => O_VIDEO_G,
+      O_BLUE    => O_VIDEO_B,
+      --
+		MRTNT     => mod_mrtnt,
+      ENA_6     => ena_6,
+      CLK       => clk
       );
 
       O_HSYNC   <= hSync;

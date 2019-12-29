@@ -5,6 +5,7 @@ set_global_assignment -name VHDL_FILE rtl/cpu/T80_MCode.vhd
 set_global_assignment -name VHDL_FILE rtl/cpu/T80_ALU.vhd
 set_global_assignment -name VHDL_FILE rtl/cpu/T80.vhd
 set_global_assignment -name VHDL_FILE rtl/dpram.vhd
+set_global_assignment -name VHDL_FILE rtl/pacman_rom_descrambler.vhd
 set_global_assignment -name VHDL_FILE rtl/pacman_vram_addr.vhd
 set_global_assignment -name VHDL_FILE rtl/pacman_video.vhd
 set_global_assignment -name VHDL_FILE rtl/pacman_audio.vhd
