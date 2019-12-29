@@ -105,9 +105,11 @@ localparam CONF_STR = {
 	"-,DIP Switches:;",
 	"-;",
 	"h1O8,Lives,3,5;",                        // club
-	"h4O89,Lives,3,5,1,2;",                   // pacman/plus
 	"h1OAB,Bonus,20000,40000,80000,None;",    // club
+	"h4O89,Lives,3,5,1,2;",                   // pacman/plus
 	"h4OAB,Bonus,10000,15000,20000,None;",    // pacman/plus
+	"h5OMN,Lives,5,4,3,2;",                   // gorkans, mrtnt
+	"h5OOP,Bonus,75000,100000,125000,150000;",// gorkans, mrtnt
 	"h2OGH,Lives,3,4,5,6;",                   // crush roller
 	"h3OKL,Lives,1,2,3,4;",                   // birdiy
 	"h2OI,First Pattern,Easy,Hard;",          // crush roller
@@ -173,7 +175,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.buttons(buttons),
 	.status(status),
-	.status_menumask({mod_orig|mod_plus|mod_ms,mod_bird,mod_crush,mod_club,direct_video}),
+	.status_menumask({mod_gm,mod_orig|mod_plus|mod_ms,mod_bird,mod_crush,mod_club,direct_video}),
 	.forced_scandoubler(forced_scandoubler),
 	.gamma_bus(gamma_bus),
 	.direct_video(direct_video),
@@ -195,6 +197,10 @@ reg mod_orig = 0;
 reg mod_crush= 0;
 reg mod_bird = 0;
 reg mod_ms   = 0;
+reg mod_gork = 0;
+reg mod_mrtnt= 0;
+wire mod_gm = mod_gork | mod_mrtnt;
+
 always @(posedge clk_sys) begin
 	reg [7:0] mod = 0;
 	if (ioctl_wr & (ioctl_index==1)) mod <= ioctl_dout[7:0];
@@ -205,6 +211,8 @@ always @(posedge clk_sys) begin
 	mod_crush<= (mod == 3);
 	mod_bird <= (mod == 4);
 	mod_ms   <= (mod == 5);
+	mod_gork <= (mod == 6);
+	mod_mrtnt<= (mod == 7);
 end
 
 wire       pressed = ps2_key[9];
@@ -331,6 +339,10 @@ wire [7:0]m_dip_cr = {1'b0,1'b0,status[19],~status[18],status[17:16],~status[15]
 //birdiy
 wire [7:0]m_dip_b  = {1'b1,1'b1,1'b1,1'b0,status[21:20],~status[15],status[14]};
 
+//gorkans, mrtnt
+wire [7:0]m_dip_gm = {1'b1,~status[12],status[25:24],status[23:22],~status[15] ^ status[14],status[14]};
+
+
 pacman pacman
 (
 	.O_VIDEO_R(r),
@@ -348,12 +360,13 @@ pacman pacman
 	.O_AUDIO(audio),
 
 	.in0_reg(~{1'b0,1'b0,  m_coin, m_cheat}),
-	.in1_reg(~{status[12], m_start_2, m_start, 1'b0, m_down_2,m_right_2,m_left_2,m_up_2}),
-	.dipsw_reg(mod_crush ? m_dip_cr : mod_bird ? m_dip_b : m_dip),
+	.in1_reg(~{mod_gm ? m_fire_2 : status[12], m_start_2, m_start, mod_gm & m_fire, {m_down,m_right,m_left,m_up} | {m_down_2,m_right_2,m_left_2,m_up_2}}),
+	.dipsw_reg(mod_crush ? m_dip_cr : mod_bird ? m_dip_b : mod_gm ? m_dip_gm : m_dip),
 
 	.mod_plus(mod_plus),
 	.mod_bird(mod_bird),
 	.mod_ms(mod_ms),
+	.mod_mrtnt(mod_mrtnt),
 
 	.in_a({m_down,m_right,m_left,m_up} | (mod_club ? 4'b0000 : {m_down_2,m_right_2,m_left_2,m_up_2})),
 	.in_b(mod_club ? {m_down_2,m_right_2,m_left_2,m_up_2} : {m_down,m_right,m_left,m_up}),
