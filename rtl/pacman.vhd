@@ -64,17 +64,14 @@ port
 	--
 	O_AUDIO    : out std_logic_vector(7 downto 0);
 	--
-	in0_reg    : in  std_logic_vector(3 downto 0);
-	in1_reg    : in  std_logic_vector(7 downto 0);
-	dipsw_reg  : in  std_logic_vector(7 downto 0);
+	in0        : in  std_logic_vector(7 downto 0);
+	in1        : in  std_logic_vector(7 downto 0);
+	dipsw      : in  std_logic_vector(7 downto 0);
 	--
 	mod_plus   : in  std_logic;
 	mod_bird   : in  std_logic;
 	mod_mrtnt  : in  std_logic;
 	mod_ms     : in  std_logic;
-	--
-	in_a       : in  std_logic_vector(3 downto 0);
-	in_b       : in  std_logic_vector(3 downto 0);
 	--
 	dn_addr    : in  std_logic_vector(15 downto 0);
 	dn_data    : in  std_logic_vector(7 downto 0);
@@ -526,13 +523,13 @@ begin
     end if;
   end process;
 
-  inj <= not in_a when control_reg(5 downto 4) = "01" else
-         not in_b when control_reg(5 downto 4) = "10" else
-         not (in_a or in_b);
+  inj <= in0(3 downto 0) when control_reg(5 downto 4) = "01" else
+         in1(3 downto 0) when control_reg(5 downto 4) = "10" else
+         in0(3 downto 0) and in1(3 downto 0);
 
   p_cpu_data_in_mux_comb : process(cpu_addr, cpu_iorq_l, cpu_m1_l, sync_bus_wreq_l,
                                    iodec_in0_l, iodec_in1_l, iodec_dipsw_l, cpu_vec_reg, sync_bus_reg, rom_data,
-											  rams_data_out, in0_reg, in1_reg, dipsw_reg, inj, iodec_dipsw2_l)
+											  rams_data_out, in0, in1, dipsw, inj, iodec_dipsw2_l)
   begin
     -- simplifed again
     if (cpu_iorq_l = '0') and (cpu_m1_l = '0') then
@@ -544,41 +541,40 @@ begin
         cpu_data_in <= rom_data;
       else
         cpu_data_in <= rams_data_out;
-        if (iodec_in0_l   = '0') then cpu_data_in <= in0_reg & inj; end if;
-        if (iodec_in1_l   = '0') then cpu_data_in <= in1_reg; end if;
-        if (iodec_dipsw_l = '0') then cpu_data_in <= dipsw_reg; end if;
+        if (iodec_in0_l   = '0') then cpu_data_in <= in0(7 downto 4) & inj; end if;
+        if (iodec_in1_l   = '0') then cpu_data_in <= in1; end if;
+        if (iodec_dipsw_l = '0') then cpu_data_in <= dipsw; end if;
         if (iodec_dipsw2_l= '0') then cpu_data_in <= x"FF"; end if;
       end if;
     end if;
   end process;
 
-	u_rams : work.dpram generic map (12,8)
-	port map
-	(
-		clock_a   => clk,
-		enable_a  => ena_6,
-		wren_a    => not sync_bus_r_w_l and not vram_l,
-		address_a => ab(11 downto 0),
-		data_a    => cpu_data_out, -- cpu only source of ram data
-		
-		clock_b   => clk,
-		address_b => ab(11 downto 0),
-		q_b       => rams_data_out
-	);
-
-	u_program_rom: work.rom_descrambler
-	port map(
-		CLK      => clk,
-		MRTNT    => mod_mrtnt,
-		MSPACMAN => mod_ms,
-		PLUS     => mod_plus,
-		cpu_m1_l => cpu_m1_l, 
-		addr     => cpu_addr,
-		data     => rom_data,
-		dn_addr  => dn_addr,
-		dn_data  => dn_data,
-		dn_wr    => dn_wr
-	);
+  u_rams : work.dpram generic map (12,8)
+  port map
+  (
+  	 clock_a   => clk,
+  	 enable_a  => ena_6,
+  	 wren_a    => not sync_bus_r_w_l and not vram_l,
+  	 address_a => ab(11 downto 0),
+  	 data_a    => cpu_data_out, -- cpu only source of ram data
+  	 clock_b   => clk,
+  	 address_b => ab(11 downto 0),
+  	 q_b       => rams_data_out
+  );
+  
+  u_program_rom: work.rom_descrambler
+  port map(
+  	 CLK      => clk,
+  	 MRTNT    => mod_mrtnt,
+  	 MSPACMAN => mod_ms,
+  	 PLUS     => mod_plus,
+  	 cpu_m1_l => cpu_m1_l, 
+  	 addr     => cpu_addr,
+  	 data     => rom_data,
+  	 dn_addr  => dn_addr,
+  	 dn_data  => dn_data,
+  	 dn_wr    => dn_wr
+  );
 	
   --
   -- video subsystem

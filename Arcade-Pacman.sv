@@ -161,8 +161,10 @@ wire  [7:0] ioctl_dout;
 
 wire [10:0] ps2_key;
 
-wire [15:0] joy1;
-wire [15:0] joy2;
+wire [15:0] joy1 = mod_club ? joy1a : (joy1a | joy2a);
+wire [15:0] joy2 = mod_club ? joy2a : (joy1a | joy2a);
+wire [15:0] joy1a;
+wire [15:0] joy2a;
 
 wire [21:0] gamma_bus;
 
@@ -186,8 +188,8 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.ioctl_dout(ioctl_dout),
 	.ioctl_index(ioctl_index),
 
-	.joystick_0(joy1),
-	.joystick_1(joy2),
+	.joystick_0(joy1a),
+	.joystick_1(joy2a),
 	.ps2_key(ps2_key)
 );
 
@@ -359,19 +361,16 @@ pacman pacman
 
 	.O_AUDIO(audio),
 
-	.in0_reg(~{1'b0,1'b0,  m_coin, m_cheat}),
-	.in1_reg(~{mod_gm ? m_fire_2 : status[12], m_start_2, m_start, mod_gm & m_fire, {m_down,m_right,m_left,m_up} | {m_down_2,m_right_2,m_left_2,m_up_2}}),
-	.dipsw_reg(mod_crush ? m_dip_cr : mod_bird ? m_dip_b : mod_gm ? m_dip_gm : m_dip),
+	.in0(~{1'b0,                           1'b0,      m_coin,  m_cheat,         m_down,  m_right,  m_left,  m_up  }),
+	.in1(~{mod_gm ? m_fire_2 : status[12], m_start_2, m_start, mod_gm & m_fire, m_down_2,m_right_2,m_left_2,m_up_2}),
+	.dipsw(mod_crush ? m_dip_cr : mod_bird ? m_dip_b : mod_gm ? m_dip_gm : m_dip),
 
 	.mod_plus(mod_plus),
 	.mod_bird(mod_bird),
 	.mod_ms(mod_ms),
 	.mod_mrtnt(mod_mrtnt),
 
-	.in_a({m_down,m_right,m_left,m_up} | (mod_club ? 4'b0000 : {m_down_2,m_right_2,m_left_2,m_up_2})),
-	.in_b(mod_club ? {m_down_2,m_right_2,m_left_2,m_up_2} : {m_down,m_right,m_left,m_up}),
-
-	.RESET(RESET | status[0] |  buttons[1]|ioctl_download),
+	.RESET(RESET | status[0] | buttons[1] | ioctl_download),
 	.CLK(clk_sys),
 	.ENA_6(ce_6m)
 );
