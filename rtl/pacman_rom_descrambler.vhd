@@ -351,7 +351,7 @@ begin
 
 		-- mux ROMs to same data bus
 		-- ignore A15 so that Pacman ROMs 0000-3FFF mirror in high mem at 8000-BFFF
-		if rom_addr(14) = '0' then
+		if rom_addr(15) = '0' then
 			rom_data_in <= r;
 		else
 			rom_data_in <= rom_hi;
