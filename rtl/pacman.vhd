@@ -70,7 +70,10 @@ port
 	in0_reg    : in  std_logic_vector(3 downto 0);
 	in1_reg    : in  std_logic_vector(7 downto 0);
 	dipsw_reg  : in  std_logic_vector(7 downto 0);
-
+	--
+	mod_plus   : in  std_logic;
+	mod_bird   : in  std_logic;
+	--
 	in_a       : in  std_logic_vector(3 downto 0);
 	in_b       : in  std_logic_vector(3 downto 0);
 	--
@@ -120,6 +123,11 @@ architecture RTL of PACMAN is
     signal sync_bus_cs_l    : std_logic;
 
     signal control_reg      : std_logic_vector(7 downto 0);
+    signal c_flip           : std_logic;
+    signal c_int            : std_logic;
+    signal c_sound          : std_logic;
+
+	 
     --
     signal vram_addr_ab     : std_logic_vector(11 downto 0);
     signal ab               : std_logic_vector(11 downto 0);
@@ -152,6 +160,16 @@ architecture RTL of PACMAN is
     signal watchdog_reset_l : std_logic;
 
     signal rom0_cs,rom1_cs  : std_logic;
+
+	type mtd_t is array(0 to 31) of std_logic_vector(3 downto 0);
+	signal picktbl: mtd_t := (
+		X"0",X"2",X"4",X"2",X"4",X"0",X"4",X"2",X"2",X"0",X"2",X"2",X"4",X"0",X"4",X"2",
+		X"2",X"2",X"4",X"0",X"4",X"2",X"4",X"0",X"0",X"4",X"0",X"4",X"4",X"2",X"4",X"2"
+	);
+	
+	signal r                : std_logic_vector(7 downto 0);
+	signal mtd_addr         : std_logic_vector(4 downto 0);
+	signal method           : std_logic_vector(3 downto 0);
 
 begin
 
@@ -243,7 +261,7 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
       --rising_vblank := do_hsync; -- debug
       -- interrupt 8c
 
-      if (control_reg(0) = '0') then
+      if (c_int = '0') then
         cpu_int_l <= '1';
       elsif rising_vblank then -- 1EF
         cpu_int_l <= '0';
@@ -384,7 +402,7 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
       V4      => vcnt(2),
       V2      => vcnt(1),
       V1      => vcnt(0),
-      FLIP    => control_reg(3)
+      FLIP    => c_flip
       );
 
   p_ab_mux_comb : process(hcnt, cpu_addr, vram_addr_ab)
@@ -406,7 +424,7 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
     vram_l <= not (a or b);
   end process;
 
-  p_io_decode_comb : process(sync_bus_r_w_l, sync_bus_stb, ab, cpu_addr)
+  p_io_decode_comb : process(sync_bus_r_w_l, sync_bus_stb, ab, cpu_addr, mod_bird)
     variable sel  : std_logic_vector(2 downto 0);
     variable dec  : std_logic_vector(7 downto 0);
     variable selb : std_logic_vector(1 downto 0);
@@ -457,7 +475,7 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
     -- 7M
     decb := "1111";
     selb := ab(5) & ab(4);
-    if (dec(1) = '0') then
+    if (dec(2) = '0' and mod_bird = '1') or (dec(1) = '0' and mod_bird = '0') then
       case selb is
         when "00" => decb := "1110";
         when "01" => decb := "1101";
@@ -512,8 +530,12 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
           end if;
         end loop;
       end if;
-    end if; 
+    end if;
   end process;
+  
+  c_flip <= control_reg(5) when mod_bird = '1' else control_reg(3);
+  c_sound<= control_reg(3) when mod_bird = '1' else control_reg(1);
+  c_int  <= control_reg(1) when mod_bird = '1' else control_reg(0);
 
   p_db_mux_comb : process(hcnt, cpu_data_out, rams_data_out)
   begin
@@ -569,6 +591,16 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
 		q_b       => rams_data_out
 	);
 
+	mtd_addr <= cpu_addr(9) & cpu_addr(7) & cpu_addr(5) & cpu_addr(2) & cpu_addr(0);
+	method <= picktbl(to_integer(unsigned(mtd_addr))) xor ("000" & cpu_addr(11));
+
+	program_rom_dinl <= (r(7)&r(6)&r(5)&r(4)&r(3)&r(2)&r(1)&r(0)) xor X"00" when method = X"0" or mod_plus = '0' else
+							  (r(7)&r(6)&r(5)&r(4)&r(3)&r(2)&r(1)&r(0)) xor X"28" when method = X"1" else
+							  (r(6)&r(1)&r(3)&r(2)&r(5)&r(7)&r(0)&r(4)) xor X"96" when method = X"2" else
+							  (r(6)&r(1)&r(5)&r(2)&r(3)&r(7)&r(0)&r(4)) xor X"be" when method = X"3" else
+							  (r(0)&r(3)&r(7)&r(6)&r(4)&r(2)&r(1)&r(5)) xor X"d5" when method = X"4" else
+							  (r(0)&r(3)&r(4)&r(6)&r(7)&r(2)&r(1)&r(5)) xor X"dd";
+
 	u_program_rom0 : work.dpram generic map (14,8)
 	port map
 	(
@@ -579,7 +611,7 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
 	
 		clock_b   => clk,
 		address_b => cpu_addr(13 downto 0),
-		q_b       => program_rom_dinl
+		q_b       => r
 	);
 	
 	u_program_rom1 : work.dpram generic map (14,8)
@@ -611,7 +643,7 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
       --
       I_HBLANK      => hblank,
       I_VBLANK      => vblank,
-      I_FLIP        => control_reg(3),
+      I_FLIP        => c_flip,
       I_WR2_L       => wr2_l,
 	--
 	dn_addr   => dn_addr,
@@ -645,7 +677,7 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
       --
       I_WR1_L       => wr1_l,
       I_WR0_L       => wr0_l,
-      I_SOUND_ON    => control_reg(1),
+      I_SOUND_ON    => c_sound,
 		--
 		dn_addr   => dn_addr,
 		dn_data   => dn_data,
