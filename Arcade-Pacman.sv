@@ -278,7 +278,7 @@ wire [2:0] r,g;
 wire [1:0] b;
 
 
-arcade_rotate_fx #(289,224,8) arcade_video
+arcade_rotate_fx #(288,224,8) arcade_video
 (
 	.*,
 
