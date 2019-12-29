@@ -317,10 +317,11 @@ pacman pacman
 
 	.O_AUDIO(audio),
 
-	.in0_reg(~{2'b00,btn_coin_1, m_coin|btn_coin_2, m_cheat , m_down,m_right,m_left,m_up}),
+	.in0_reg(~{2'b00,btn_coin_1, m_coin|btn_coin_2, m_cheat}),
 	.in1_reg(~{status[12], m_start2|btn_start_2, m_start1|btn_start_1,1'b0,m_down_2,m_right_2,m_left_2,m_up_2}),
-
 	.dipsw_reg(m_dip),
+
+	.in_a({m_down,m_right,m_left,m_up}),
 
 	.RESET(RESET | status[0] |  buttons[1]|ioctl_download),
 	.CLK(clk_sys),

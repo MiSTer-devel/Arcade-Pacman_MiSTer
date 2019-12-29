@@ -55,29 +55,33 @@ entity PACMAN is
 generic (
 	MRTNT  : std_logic := '0'  -- 1 to descramble Mr TNT ROMs, 0 otherwise
 );
-  port (
-    O_VIDEO_R             : out   std_logic_vector(2 downto 0);
-    O_VIDEO_G             : out   std_logic_vector(2 downto 0);
-    O_VIDEO_B             : out   std_logic_vector(1 downto 0);
-    O_HSYNC               : out   std_logic;
-    O_VSYNC               : out   std_logic;
-    O_HBLANK              : out   std_logic;
-    O_VBLANK              : out   std_logic;
-    --
-    O_AUDIO               : out  std_logic_vector(7 downto 0);
-    --
-    in0_reg               : in  std_logic_vector(7 downto 0);
-    in1_reg               : in  std_logic_vector(7 downto 0);
-    dipsw_reg             : in  std_logic_vector(7 downto 0);
-    --
-    dn_addr    : in  std_logic_vector(15 downto 0);
-    dn_data    : in  std_logic_vector(7 downto 0);
-    dn_wr      : in  std_logic;
-    --
-    RESET                 : in    std_logic;
-	 CLK      				  : in    std_logic;
-    ENA_6   		        : in  std_logic
-    );
+port
+(
+	O_VIDEO_R  : out std_logic_vector(2 downto 0);
+	O_VIDEO_G  : out std_logic_vector(2 downto 0);
+	O_VIDEO_B  : out std_logic_vector(1 downto 0);
+	O_HSYNC    : out std_logic;
+	O_VSYNC    : out std_logic;
+	O_HBLANK   : out std_logic;
+	O_VBLANK   : out std_logic;
+	--
+	O_AUDIO    : out std_logic_vector(7 downto 0);
+	--
+	in0_reg    : in  std_logic_vector(3 downto 0);
+	in1_reg    : in  std_logic_vector(7 downto 0);
+	dipsw_reg  : in  std_logic_vector(7 downto 0);
+
+	in_a       : in  std_logic_vector(3 downto 0);
+	in_b       : in  std_logic_vector(3 downto 0);
+	--
+	dn_addr    : in  std_logic_vector(15 downto 0);
+	dn_data    : in  std_logic_vector(7 downto 0);
+	dn_wr      : in  std_logic;
+	--
+	RESET      : in  std_logic;
+	CLK        : in  std_logic;
+	ENA_6   	  : in  std_logic
+);
 end;
 
 architecture RTL of PACMAN is
@@ -125,6 +129,8 @@ architecture RTL of PACMAN is
     signal sync_bus_wreq_l  : std_logic;
     signal sync_bus_stb     : std_logic;
 
+    signal inj              : std_logic_vector(3 downto 0);
+
     signal cpu_vec_reg      : std_logic_vector(7 downto 0);
     signal sync_bus_reg     : std_logic_vector(7 downto 0);
 
@@ -139,12 +145,13 @@ architecture RTL of PACMAN is
     signal iodec_in0_l      : std_logic;
     signal iodec_in1_l      : std_logic;
     signal iodec_dipsw_l    : std_logic;
+    signal iodec_dipsw2_l   : std_logic;
 
     -- watchdog
-    signal watchdog_cnt     : std_logic_vector(3 downto 0);
+    signal watchdog_cnt     : std_logic_vector(7 downto 0);
     signal watchdog_reset_l : std_logic;
 
-	signal rom0_cs,rom1_cs  : std_logic;
+    signal rom0_cs,rom1_cs  : std_logic;
 
 begin
 
@@ -245,25 +252,17 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
       -- watchdog 8c
       -- note sync reset
       if (reset = '1') then
-        watchdog_cnt <= "1111";
+			watchdog_cnt <= X"FF";
       elsif (iodec_wdr_l = '0') then
-        watchdog_cnt <= "0000";
+			watchdog_cnt <= X"00";
       elsif rising_vblank then
         watchdog_cnt <= watchdog_cnt + "1";
       end if;
 
-
       watchdog_reset_l <= '1';
-      if (watchdog_cnt = "1111") then
+		if (watchdog_cnt = X"FF") then
         watchdog_reset_l <= '0';
       end if;
-
-      -- simulation
-      -- pragma translate_off
-      -- synopsys translate_off
-      watchdog_reset_l <= not reset; -- watchdog disable
-      -- synopsys translate_on
-      -- pragma translate_on
     end if;
   end process;
 
@@ -453,6 +452,7 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
     iodec_in0_l   <= dec(4);
     iodec_in1_l   <= dec(5);
     iodec_dipsw_l <= dec(6);
+    iodec_dipsw2_l<= dec(7);
 
     -- 7M
     decb := "1111";
@@ -526,12 +526,16 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
     end if;
   end process;
 
+  inj <= not in_a when control_reg(5 downto 4) = "01" else
+         not in_b when control_reg(5 downto 4) = "10" else
+         not (in_a or in_b);
+
   rom_data <= program_rom_dinl when cpu_addr(15) = '0' else program_rom_dinh;
   rom_data_out <= rom_data(7 downto 6) & rom_data(3) & rom_data(4) & rom_data(5) & rom_data(2 downto 0) when MRTNT = '1' else rom_data;
 
   p_cpu_data_in_mux_comb : process(cpu_addr, cpu_iorq_l, cpu_m1_l, sync_bus_wreq_l,
                                    iodec_in0_l, iodec_in1_l, iodec_dipsw_l, cpu_vec_reg, sync_bus_reg, rom_data_out,
-											  rams_data_out, in0_reg, in1_reg, dipsw_reg)
+											  rams_data_out, in0_reg, in1_reg, dipsw_reg, inj, iodec_dipsw2_l)
   begin
     -- simplifed again
     if (cpu_iorq_l = '0') and (cpu_m1_l = '0') then
@@ -539,15 +543,14 @@ rom1_cs <= '1' when dn_addr(15 downto 14) = "01" else '0';
     elsif (sync_bus_wreq_l = '0') then
       cpu_data_in <= sync_bus_reg;
     else
-      if (cpu_addr(15 downto 14) = "00") then      -- ROM at 0000 - 3fff
-        cpu_data_in <= rom_data_out;
-      elsif (cpu_addr(15 downto 13) = "100") then  -- ROM at 8000 - 9fff
+      if (cpu_addr(14) = '0') then      -- ROM at 0000 - 3fff, 8000 - 9fff
         cpu_data_in <= rom_data_out;
       else
         cpu_data_in <= rams_data_out;
-        if (iodec_in0_l   = '0') then cpu_data_in <= in0_reg; end if;
+        if (iodec_in0_l   = '0') then cpu_data_in <= in0_reg & inj; end if;
         if (iodec_in1_l   = '0') then cpu_data_in <= in1_reg; end if;
         if (iodec_dipsw_l = '0') then cpu_data_in <= dipsw_reg; end if;
+        if (iodec_dipsw2_l= '0') then cpu_data_in <= x"FF"; end if;
       end if;
     end if;
   end process;
