@@ -401,7 +401,7 @@ always @(posedge clk) begin
 	if(innew[2]) mask <= 4;
 	if(innew[3]) mask <= 8;
 	
-	if(dis) mask <= '1;
+	if(!(indir & mask) || dis) mask <= '1;
 end
 
 endmodule
