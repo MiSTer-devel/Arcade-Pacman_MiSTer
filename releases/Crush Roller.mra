@@ -6,6 +6,13 @@
 	<manufacturer>Alpha Denshi Co. / Kural Esco Electric, Ltd.</manufacturer>
 	<category>Maze</category>
 	<rbf>pacman</rbf>
+	<switches default="EF,FF,11">
+		<dip bits="4"     name="Cabinet" ids="Upright,Cocktail"/>
+		<dip bits="16,17" name="Coinage" ids="2c/1cr,1c/1cr,1c/2cr,Free Play" values="3,1,2,0"/>
+		<dip bits="18,19" name="Lives" ids="3,4,5,6"/>
+		<dip bits="20"    name="First Pattern" ids="Hard,Easy"/>
+		<dip bits="21"    name="Teleport Holes" ids="On,Off"/>
+	</switches> 
 	<rom index="1">
 		<part>03</part>
 	</rom> 

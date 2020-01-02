@@ -102,21 +102,7 @@ localparam CONF_STR = {
 	"H0O2,Orientation,Vert,Horz;",
 	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
-	"-,DIP Switches:;",
-	"-;",
-	"h1O8,Lives,3,5;",                        // club
-	"h1OAB,Bonus,20000,40000,80000,None;",    // club
-	"h4O89,Lives,3,5,1,2;",                   // pacman/plus
-	"h4OAB,Bonus,10000,15000,20000,None;",    // pacman/plus
-	"h5OMN,Lives,5,4,3,2;",                   // gorkans, mrtnt
-	"h5OOP,Bonus,75000,100000,125000,150000;",// gorkans, mrtnt
-	"h2OGH,Lives,3,4,5,6;",                   // crush roller
-	"h3OKL,Lives,1,2,3,4;",                   // birdiy
-	"h2OI,First Pattern,Easy,Hard;",          // crush roller
-	"h2OJ,Teleport Holes,On,Off;",            // crush roller
-	"H3OC,Cabinet,Upright,Cocktail;",         // not birdiy
-	"h4OD,Ghost names,Standard,Alternative;", // pacman/plus
-	"OEF,Coins,1 Coin 2 Play, 2 Coins 1 Play, Free Play, 1 Coin 1 Play;", // all
+	"DIP;",
 	"-;",
 	"R0,Reset;",
 	"J1,Skip,Start 1P,Start 2P,Coin;",
@@ -205,7 +191,7 @@ wire mod_gm = mod_gork | mod_mrtnt;
 
 always @(posedge clk_sys) begin
 	reg [7:0] mod = 0;
-	if (ioctl_wr & (ioctl_index==1)) mod <= ioctl_dout[7:0];
+	if (ioctl_wr & (ioctl_index==1)) mod <= ioctl_dout;
 	
 	mod_orig <= (mod == 0);
 	mod_plus <= (mod == 1);
@@ -216,6 +202,9 @@ always @(posedge clk_sys) begin
 	mod_gork <= (mod == 6);
 	mod_mrtnt<= (mod == 7);
 end
+
+reg [7:0] sw[8];
+always @(posedge clk_sys) if (ioctl_wr && (ioctl_index==254) && !ioctl_addr[24:3]) sw[ioctl_addr[2:0]] <= ioctl_dout;
 
 wire       pressed = ps2_key[9];
 wire [8:0] code    = ps2_key[8:0];
@@ -332,19 +321,6 @@ assign AUDIO_L = {audio, audio};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
 
-//pacman variants
-wire [7:0]m_dip = {~status[13], 1'b1,status[11:10],~status[9]|mod_club,status[8],~status[15],status[14]};
-
-//crush roller
-wire [7:0]m_dip_cr = {1'b0,1'b0,status[19],~status[18],status[17:16],~status[15],status[14]};
-
-//birdiy
-wire [7:0]m_dip_b  = {1'b1,1'b1,1'b1,1'b0,status[21:20],~status[15],status[14]};
-
-//gorkans, mrtnt
-wire [7:0]m_dip_gm = {1'b1,~status[12],status[25:24],status[23:22],~status[15] ^ status[14],status[14]};
-
-
 pacman pacman
 (
 	.O_VIDEO_R(r),
@@ -361,16 +337,16 @@ pacman pacman
 
 	.O_AUDIO(audio),
 
-	.in0(~{1'b0,                           1'b0,      m_coin,  m_cheat,         m_down,  m_right,  m_left,  m_up  }),
-	.in1(~{mod_gm ? m_fire_2 : status[12], m_start_2, m_start, mod_gm & m_fire, m_down_2,m_right_2,m_left_2,m_up_2}),
-	.dipsw(mod_crush ? m_dip_cr : mod_bird ? m_dip_b : mod_gm ? m_dip_gm : m_dip),
+	.in0(sw[0] & ~{2'b00, m_coin, m_cheat, m_down, m_right, m_left, m_up}),
+	.in1(sw[1] & ~{mod_gm ? m_fire_2 : 1'b0, m_start_2, m_start, mod_gm & m_fire, m_down_2,m_right_2,m_left_2,m_up_2}),
+	.dipsw(sw[2]),
 
 	.mod_plus(mod_plus),
 	.mod_bird(mod_bird),
 	.mod_ms(mod_ms),
 	.mod_mrtnt(mod_mrtnt),
 
-	.RESET(RESET | status[0] | buttons[1] | ioctl_download),
+	.RESET(RESET | status[0] | buttons[1]),
 	.CLK(clk_sys),
 	.ENA_6(ce_6m)
 );

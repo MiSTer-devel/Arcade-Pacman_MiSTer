@@ -8,6 +8,10 @@
 	<category>Platform</category>
 	<category>Platform / Climbing</category>
 	<rbf>pacman</rbf>
+	<switches default="FF,FF,E9">
+		<dip bits="16,17" name="Coinage" ids="2c/1cr,1c/1cr,1c/2cr,Free Play" values="3,1,2,0"/>
+		<dip bits="18,19" name="Lives" ids="1,2,3,4"/>
+	</switches>
 	<rom index="1">
 		<part>04</part>
 	</rom> 

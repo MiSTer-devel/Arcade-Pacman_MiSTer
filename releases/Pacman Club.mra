@@ -6,9 +6,16 @@
 	<manufacturer>Miky SRL</manufacturer>
 	<category>Maze / Pac-Man</category>
 	<rbf>pacman</rbf>
+	<switches default="FF,FF,C9">
+		<dip bits="15"    name="Cabinet" ids="Cocktail,Upright"/>
+		<dip bits="16,17" name="Coinage" ids="2c/1cr,1c/1cr,1c/2cr,Free Play" values="3,1,2,0"/>
+		<dip bits="18"    name="Lives" ids="3,5"/>
+		<dip bits="20,21" name="Bonus Life After" ids="20000,40000,80000,None"/>
+		<dip bits="22"    name="Difficulty" ids="Hard,Normal"/>
+	</switches>
 	<rom index="1">
 		<part>02</part>
-	</rom> 
+	</rom>
 	<rom index="0" zip="clubpacm.zip" md5="7ecb94f8384ea92da503e670dc9f8397" type="merged|nonmerged">
 		<part name="prg.6f"/>
 		<part name="12.5e"/>

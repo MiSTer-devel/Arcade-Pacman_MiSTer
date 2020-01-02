@@ -1,25 +1,32 @@
 <misterromdescription>
-  <rbf>pacman</rbf>
-  <rom index="1">
-      <part>05</part>
-  </rom> 
-  <rom index="0" zip="mspacman.zip" md5="6c75da1e5c32807fdff6eeb9f5a75ae3">
-        <part name="pacman.6e"/>
-        <part name="pacman.6f"/>
-        <part name="pacman.6h"/>
-        <part name="pacman.6j"/>
-        <part name="u5"/>
-        <part name="u5"/>
-        <part name="u6"/>
-        <part name="u7"/>
-        <part name="u7"/>
-        <part name="5e"/>
-        <part name="5f"/>
-        <part name="5f"/>
-        <part name="5f"/>
-        <part name="82s126.1m"/>
-        <part name="82s126.4a"/>
-        <part name="82s126.3m"/>
-        <part name="82s123.7f"/>
-  </rom>
+	<rbf>pacman</rbf>
+	<switches default="FF,FF,C9">
+		<dip bits="15"    name="Cabinet" ids="Cocktail,Upright"/>
+		<dip bits="16,17" name="Coinage" ids="2c/1cr,1c/1cr,1c/2cr,Free Play" values="3,1,2,0"/>
+		<dip bits="18,19" name="Lives" ids="1,2,3,5"/>
+		<dip bits="20,21" name="Bonus Life After" ids="10000,15000,20000,None"/>
+		<dip bits="22"    name="Difficulty" ids="Hard,Normal"/>
+	</switches>
+	<rom index="1">
+		<part>05</part>
+	</rom> 
+	<rom index="0" zip="mspacman.zip" md5="6c75da1e5c32807fdff6eeb9f5a75ae3">
+		<part name="pacman.6e"/>
+		<part name="pacman.6f"/>
+		<part name="pacman.6h"/>
+		<part name="pacman.6j"/>
+		<part name="u5"/>
+		<part name="u5"/>
+		<part name="u6"/>
+		<part name="u7"/>
+		<part name="u7"/>
+		<part name="5e"/>
+		<part name="5f"/>
+		<part name="5f"/>
+		<part name="5f"/>
+		<part name="82s126.1m"/>
+		<part name="82s126.4a"/>
+		<part name="82s126.3m"/>
+		<part name="82s123.7f"/>
+	</rom>
 </misterromdescription>
