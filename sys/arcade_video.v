@@ -132,7 +132,7 @@ wire scandoubler = fx || forced_scandoubler;
 video_mixer #(WIDTH+4, 1, GAMMA) video_mixer
 (
 	.clk_vid(HDMI_CLK),
-	.ce_pix(CE | (~scandoubler & ~gamma_bus[19] & ~direct_video)),
+	.ce_pix(CE | (~scandoubler & ~gamma_bus[19] & ~norot)),
 	.ce_pix_out(HDMI_CE),
 
 	.scandoubler(scandoubler),

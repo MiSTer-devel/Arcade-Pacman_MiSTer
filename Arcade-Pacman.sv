@@ -102,14 +102,11 @@ localparam CONF_STR = {
 	"H0O2,Orientation,Vert,Horz;",
 	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
-	"O89,Lives,3,5,1,2;",
-	"OAB,Bonus,10000,15000,20000,None;",
-	"OC,Cabinet,Upright,Cocktail;",
-	"OD,Alternate ghost names,No,Yes;",		
-	"OEF,Coins,1 Coin 1 Play, Free Play, 2 Coins 1 Play, 1 Coin 2 Play",
+	"DIP;",
 	"-;",
 	"R0,Reset;",
 	"J1,Skip,Start 1P,Start 2P,Coin;",
+	"jn,A,Start,Select,R;",
 	"V,v",`BUILD_DATE
 };
 
@@ -143,14 +140,17 @@ wire        forced_scandoubler;
 wire        direct_video;
 
 wire        ioctl_download;
+wire  [7:0] ioctl_index;
 wire        ioctl_wr;
 wire [24:0] ioctl_addr;
 wire  [7:0] ioctl_dout;
 
 wire [10:0] ps2_key;
 
-wire [15:0] joystick_0, joystick_1;
-wire [15:0] joy = joystick_0 | joystick_1;
+wire [15:0] joy1 = mod_club ? joy1a : (joy1a | joy2a);
+wire [15:0] joy2 = mod_club ? joy2a : (joy1a | joy2a);
+wire [15:0] joy1a;
+wire [15:0] joy2a;
 
 wire [21:0] gamma_bus;
 
@@ -163,7 +163,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.buttons(buttons),
 	.status(status),
-	.status_menumask(direct_video),
+	.status_menumask({mod_gm,mod_orig|mod_plus|mod_ms,mod_bird,mod_crush,mod_club,direct_video}),
 	.forced_scandoubler(forced_scandoubler),
 	.gamma_bus(gamma_bus),
 	.direct_video(direct_video),
@@ -172,11 +172,39 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.ioctl_wr(ioctl_wr),
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_dout),
+	.ioctl_index(ioctl_index),
 
-	.joystick_0(joystick_0),
-	.joystick_1(joystick_1),
+	.joystick_0(joy1a),
+	.joystick_1(joy2a),
 	.ps2_key(ps2_key)
 );
+
+reg mod_plus = 0;
+reg mod_club = 0;
+reg mod_orig = 0;
+reg mod_crush= 0;
+reg mod_bird = 0;
+reg mod_ms   = 0;
+reg mod_gork = 0;
+reg mod_mrtnt= 0;
+wire mod_gm = mod_gork | mod_mrtnt;
+
+always @(posedge clk_sys) begin
+	reg [7:0] mod = 0;
+	if (ioctl_wr & (ioctl_index==1)) mod <= ioctl_dout;
+	
+	mod_orig <= (mod == 0);
+	mod_plus <= (mod == 1);
+	mod_club <= (mod == 2);
+	mod_crush<= (mod == 3);
+	mod_bird <= (mod == 4);
+	mod_ms   <= (mod == 5);
+	mod_gork <= (mod == 6);
+	mod_mrtnt<= (mod == 7);
+end
+
+reg [7:0] sw[8];
+always @(posedge clk_sys) if (ioctl_wr && (ioctl_index==254) && !ioctl_addr[24:3]) sw[ioctl_addr[2:0]] <= ioctl_dout;
 
 wire       pressed = ps2_key[9];
 wire [8:0] code    = ps2_key[8:0];
@@ -193,11 +221,9 @@ always @(posedge clk_sys) begin
 			'h029: btn_fire        <= pressed; // space
 			'h014: btn_fire        <= pressed; // ctrl
 
-			'h005: btn_one_player  <= pressed; // F1
-			'h006: btn_two_players <= pressed; // F2
+			'h005: btn_start_1     <= pressed; // F1
+			'h006: btn_start_2     <= pressed; // F2
 			'h004: btn_coin        <= pressed; // F3
-
-			'h003: btn_cheat       <= pressed; // F5
 			
 			// JPAC/IPAC/MAME Style Codes
 			'h016: btn_start_1     <= pressed; // 1
@@ -217,11 +243,8 @@ reg btn_up    = 0;
 reg btn_down  = 0;
 reg btn_right = 0;
 reg btn_left  = 0;
-reg btn_one_player  = 0;
-reg btn_two_players = 0;
-reg btn_coin = 0;
-reg btn_cheat = 0;
-reg btn_fire = 0;
+reg btn_coin  = 0;
+reg btn_fire  = 0;
 
 reg btn_start_1=0;
 reg btn_start_2=0;
@@ -231,8 +254,7 @@ reg btn_up_2=0;
 reg btn_down_2=0;
 reg btn_left_2=0;
 reg btn_right_2=0;
-reg btn_cheat_2=0;
-reg btn_fire_2 = 0;
+reg btn_fire_2=0;
 
 wire no_rotate = status[2] & ~direct_video;
 
@@ -240,11 +262,12 @@ wire m_up,m_down,m_left,m_right;
 joyonedir jod
 (
 	clk_sys,
+	mod_bird,
 	{
-		no_rotate ? btn_left  | joy[1] : btn_up    | joy[3],
-		no_rotate ? btn_right | joy[0] : btn_down  | joy[2],
-		no_rotate ? btn_down  | joy[2] : btn_left  | joy[1],
-		no_rotate ? btn_up    | joy[3] : btn_right | joy[0]
+		no_rotate ? btn_left  | joy1[1] : btn_up    | joy1[3],
+		no_rotate ? btn_right | joy1[0] : btn_down  | joy1[2],
+		no_rotate ? btn_down  | joy1[2] : btn_left  | joy1[1],
+		no_rotate ? btn_up    | joy1[3] : btn_right | joy1[0]
 	},
 	{m_up,m_down,m_left,m_right}
 );
@@ -253,23 +276,23 @@ wire m_up_2,m_down_2,m_left_2,m_right_2;
 joyonedir jod_2
 (
 	clk_sys,
+	mod_bird,
 	{
-		no_rotate ? btn_left_2  | joy[1] : btn_up_2    | joy[3],
-		no_rotate ? btn_right_2 | joy[0] : btn_down_2  | joy[2],
-		no_rotate ? btn_down_2  | joy[2] : btn_left_2  | joy[1],
-		no_rotate ? btn_up_2    | joy[3] : btn_right_2 | joy[0]
+		no_rotate ? btn_left_2  | joy2[1] : btn_up_2    | joy2[3],
+		no_rotate ? btn_right_2 | joy2[0] : btn_down_2  | joy2[2],
+		no_rotate ? btn_down_2  | joy2[2] : btn_left_2  | joy2[1],
+		no_rotate ? btn_up_2    | joy2[3] : btn_right_2 | joy2[0]
 	},
 	{m_up_2,m_down_2,m_left_2,m_right_2}
 );
 
+wire m_fire     = btn_fire    | joy1[4];
+wire m_fire_2   = btn_fire_2  | joy2[4];
+wire m_start    = btn_start_1 | joy1[5] | joy2[5];
+wire m_start_2  = btn_start_2 | joy1[6] | joy2[6];
+wire m_coin     = btn_coin    | joy1[7] | joy2[7] | btn_coin_1 | btn_coin_2;
 
-wire m_cheat = btn_fire | btn_fire_2 | btn_cheat | joy[4];
-
-
-wire m_start1 = btn_one_player  | joy[5];
-wire m_start2 = btn_two_players | joy[6];
-wire m_coin   = btn_coin | joy[7];
-
+wire m_cheat    = (mod_orig | mod_plus) & (m_fire | m_fire_2);
 
 wire hblank, vblank;
 wire ce_vid = ce_6m;
@@ -277,8 +300,7 @@ wire hs, vs;
 wire [2:0] r,g;
 wire [1:0] b;
 
-
-arcade_rotate_fx #(289,224,8) arcade_video
+arcade_rotate_fx #(288,224,8) arcade_video
 (
 	.*,
 
@@ -299,8 +321,6 @@ assign AUDIO_L = {audio, audio};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
 
-wire [7:0]m_dip = {~status[13], 1'b1,status[11:10],~status[9],status[8],~status[15],status[14]};
-
 pacman pacman
 (
 	.O_VIDEO_R(r),
@@ -313,20 +333,20 @@ pacman pacman
 
 	.dn_addr(ioctl_addr[15:0]),
 	.dn_data(ioctl_dout),
-	.dn_wr(ioctl_wr),
+	.dn_wr(ioctl_wr && !ioctl_index),
 
 	.O_AUDIO(audio),
 
-	//.in0(~{2'b00, m_coin, m_fire, m_down,m_right,m_left,m_up}),
-	//.in1(~{1'b0, m_start2, m_start1, 5'b00000}),
-	.in0(~{2'b00,btn_coin_1, m_coin|btn_coin_2, m_cheat , m_down,m_right,m_left,m_up}),
-	.in1(~{status[12], m_start2|btn_start_2, m_start1|btn_start_1,1'b0,m_down_2,m_right_2,m_left_2,m_up_2}),
+	.in0(sw[0] & ~{2'b00, m_coin, m_cheat, m_down, m_right, m_left, m_up}),
+	.in1(sw[1] & ~{mod_gm ? m_fire_2 : 1'b0, m_start_2, m_start, mod_gm & m_fire, m_down_2,m_right_2,m_left_2,m_up_2}),
+	.dipsw(sw[2]),
 
-	//.dipsw1(8'b1_1_00_11_01),
-	.dipsw1(m_dip),
-	.dipsw2(8'b11111111),
+	.mod_plus(mod_plus),
+	.mod_bird(mod_bird),
+	.mod_ms(mod_ms),
+	.mod_mrtnt(mod_mrtnt),
 
-	.RESET(RESET | status[0] |  buttons[1]|ioctl_download),
+	.RESET(RESET | status[0] | buttons[1]),
 	.CLK(clk_sys),
 	.ENA_6(ce_6m)
 );
@@ -336,6 +356,7 @@ endmodule
 module joyonedir
 (
 	input        clk,
+	input        dis,
 	input  [3:0] indir,
 	output [3:0] outdir
 );
@@ -355,6 +376,8 @@ always @(posedge clk) begin
 	if(innew[1]) mask <= 2;
 	if(innew[2]) mask <= 4;
 	if(innew[3]) mask <= 8;
+	
+	if(!(indir & mask) || dis) mask <= '1;
 end
 
 endmodule
