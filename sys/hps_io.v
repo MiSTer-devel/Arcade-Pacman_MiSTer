@@ -58,6 +58,9 @@ module hps_io #(parameter STRLEN=0, PS2DIV=0, WIDE=0, VDNUM=1, PS2WE=0)
 	input             status_set,
 	input      [15:0] status_menumask,
 
+	input             info_req,
+	input       [7:0] info,
+
 	//toggle to force notify of video mode change
 	input             new_vmode,
 
@@ -184,6 +187,7 @@ video_calc video_calc
 (
 	.clk_100(HPS_BUS[43]),
 	.clk_vid(HPS_BUS[42]),
+	.clk_sys(clk_sys),
 	.ce_pix(HPS_BUS[41]),
 	.de(HPS_BUS[40]),
 	.hs(HPS_BUS[39]),
@@ -220,12 +224,17 @@ always@(posedge clk_sys) begin
 	reg        old_status_set = 0;
 	reg  [7:0] cd_req = 0;
 	reg        old_cd = 0; 
+	reg        old_info = 0;
+	reg  [7:0] info_n = 0;
 
 	old_status_set <= status_set;
 	if(~old_status_set & status_set) begin
 		stflg <= stflg + 1'd1;
 		status_req <= status_in;
 	end
+
+	old_info <= info_req;
+	if(~old_info & info_req) info_n <= info;
 
 	old_cd <= cd_in[48];
 	if(old_cd ^ cd_in[48]) cd_req <= cd_req + 1'd1; 
@@ -273,6 +282,7 @@ always@(posedge clk_sys) begin
 					'h2F: io_dout <= 1;
 					'h32: io_dout <= gamma_bus[21];
 					'h34: io_dout <= cd_req; 
+					'h36: begin io_dout <= info_n; info_n <= 0; end
 				endcase
 
 				sd_buff_addr <= 0;
@@ -454,7 +464,7 @@ end
 generate
 	if(PS2DIV) begin
 		reg clk_ps2;
-		always @(negedge clk_sys) begin
+		always @(posedge clk_sys) begin
 			integer cnt;
 			cnt <= cnt + 1'd1;
 			if(cnt == PS2DIV) begin
@@ -733,6 +743,8 @@ module video_calc
 (
 	input clk_100,
 	input clk_vid,
+	input clk_sys,
+
 	input ce_pix,
 	input de,
 	input hs,
@@ -745,22 +757,22 @@ module video_calc
 	output reg [15:0] dout
 );
 
-always @(*) begin
+always @(posedge clk_sys) begin
 	case(par_num)
-		1: dout = {|vid_int, vid_nres};
-		2: dout = vid_hcnt[15:0];
-		3: dout = vid_hcnt[31:16];
-		4: dout = vid_vcnt[15:0];
-		5: dout = vid_vcnt[31:16];
-		6: dout = vid_htime[15:0];
-		7: dout = vid_htime[31:16];
-		8: dout = vid_vtime[15:0];
-		9: dout = vid_vtime[31:16];
-	  10: dout = vid_pix[15:0];
-	  11: dout = vid_pix[31:16];
-	  12: dout = vid_vtime_hdmi[15:0];
-	  13: dout = vid_vtime_hdmi[31:16];
-	  default dout = 0;
+		1: dout <= {|vid_int, vid_nres};
+		2: dout <= vid_hcnt[15:0];
+		3: dout <= vid_hcnt[31:16];
+		4: dout <= vid_vcnt[15:0];
+		5: dout <= vid_vcnt[31:16];
+		6: dout <= vid_htime[15:0];
+		7: dout <= vid_htime[31:16];
+		8: dout <= vid_vtime[15:0];
+		9: dout <= vid_vtime[31:16];
+	  10: dout <= vid_pix[15:0];
+	  11: dout <= vid_pix[31:16];
+	  12: dout <= vid_vtime_hdmi[15:0];
+	  13: dout <= vid_vtime_hdmi[31:16];
+	  default dout <= 0;
 	endcase
 end
 

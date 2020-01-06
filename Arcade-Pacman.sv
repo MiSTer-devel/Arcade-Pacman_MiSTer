@@ -313,6 +313,7 @@ arcade_rotate_fx #(288,224,8) arcade_video
 	.HSync(hs),
 	.VSync(vs),
 
+	.rotate_ccw(0),
 	.fx(status[5:3])
 );
 
