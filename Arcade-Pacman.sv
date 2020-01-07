@@ -201,6 +201,7 @@ reg mod_eeek = 0;
 reg mod_alib = 0;
 reg mod_ponp = 0;
 reg mod_van  = 0;
+reg mod_pmm  = 0;
 
 wire mod_gm = mod_gork | mod_mrtnt;
 
@@ -221,6 +222,7 @@ always @(posedge clk_sys) begin
 	mod_alib <= (mod == 10);
 	mod_ponp <= (mod == 11);
 	mod_van  <= (mod == 12);
+	mod_pmm  <= (mod == 13);
 end
 
 reg [7:0] sw[8];
@@ -379,10 +381,10 @@ pacman pacman
 									m_start_2 | (mod_eeek & m_fire),
 									m_start,
 									(mod_gm & m_fire) | (mod_alib & m_fire_2) | (mod_ponp & m_fire_2) | (mod_van & m_fire_2),
-									m_down_2,
-									m_right_2,
-									m_left_2,
-									m_up_2
+									~mod_pmm & m_down_2,
+									mod_pmm ? m_fire : m_right_2,
+									~mod_pmm & m_left_2,
+									~mod_pmm & m_up_2
 								})),
 	.dipsw(sw[2]),
 	.dipsw2((mod_ponp | mod_van) ? sw[3] : 8'hFF),

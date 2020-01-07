@@ -1,0 +1,35 @@
+<misterromdescription>
+	<name>Pacmanic Miner</name>
+	<mameversion>0216</mameversion>
+	<setname></setname>
+	<mratimestamp>201911270000</mratimestamp>
+	<year>2013</year>
+	<manufacturer>Jim Bagley</manufacturer>
+	<category>Platform</category>
+	<rbf>pacman</rbf>
+	<switches default="FF,FF,FF">
+		<dip bits="8"     name="Music" ids="Off,On"/>
+		<dip bits="11"    name="FX" ids="Off,On"/>
+	</switches>
+	<rom index="1">
+		<part>0D</part>
+	</rom>  
+	<rom index="0" zip="pacmmm.zip" md5="015ec85c529b72170d7c32fa0062d4fd" type="nonmerged">
+		<part name="pacmmm.6e"/>
+		<part name="pacmmm.6f"/>
+		<part name="pacmmm.6h"/>
+		<part name="pacmmm.6j"/>
+		<part name="pacmmm.6e"/>
+		<part name="pacmmm.6f"/>
+		<part name="pacmmm.6h"/>
+		<part name="pacmmm.6j"/>
+		<part name="pacmmm.5e"/>
+		<part name="pacmmm.5f"/>
+		<part name="pacmmm.5f"/>
+		<part name="pacmmm.5f"/>
+		<part name="82s126.1m"/>
+		<part name="82s126.4a"/>
+		<part name="82s126.3m"/>
+		<part name="82s123.7f"/>
+	</rom>
+</misterromdescription>
