@@ -92,14 +92,14 @@ assign LED_USER  = ioctl_download;
 assign LED_DISK  = 0;
 assign LED_POWER = 0;
 
-assign HDMI_ARX = status[1] ? 8'd16 : status[2] ? 8'd4 : 8'd3;
-assign HDMI_ARY = status[1] ? 8'd9  : status[2] ? 8'd3 : 8'd4;
+assign HDMI_ARX = status[1] ? 8'd16 : (status[2] | mod_ponp) ? 8'd4 : 8'd3;
+assign HDMI_ARY = status[1] ? 8'd9  : (status[2] | mod_ponp) ? 8'd3 : 8'd4;
 
 `include "build_id.v" 
 localparam CONF_STR = {
 	"A.PACMAN;;",
 	"H0O1,Aspect Ratio,Original,Wide;",
-	"H0O2,Orientation,Vert,Horz;",
+	"H1H0O2,Orientation,Vert,Horz;",
 	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
 	"DIP;",
@@ -163,7 +163,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.buttons(buttons),
 	.status(status),
-	.status_menumask({mod_gm,mod_orig|mod_plus|mod_ms,mod_bird,mod_crush,mod_club,direct_video}),
+	.status_menumask({mod_ponp,direct_video}),
 	.forced_scandoubler(forced_scandoubler),
 	.gamma_bus(gamma_bus),
 	.direct_video(direct_video),
@@ -182,7 +182,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 reg mod_plus = 0;
 reg mod_club = 0;
 reg mod_orig = 0;
-reg mod_crush= 0;
+//reg mod_crush= 0;
 reg mod_bird = 0;
 reg mod_ms   = 0;
 reg mod_gork = 0;
@@ -190,6 +190,7 @@ reg mod_mrtnt= 0;
 reg mod_woodp= 0;
 reg mod_eeek = 0;
 reg mod_alib = 0;
+reg mod_ponp = 0;
 
 wire mod_gm = mod_gork | mod_mrtnt;
 
@@ -200,7 +201,7 @@ always @(posedge clk_sys) begin
 	mod_orig <= (mod == 0);
 	mod_plus <= (mod == 1);
 	mod_club <= (mod == 2);
-	mod_crush<= (mod == 3);
+	//mod_crush<= (mod == 3);
 	mod_bird <= (mod == 4);
 	mod_ms   <= (mod == 5);
 	mod_gork <= (mod == 6);
@@ -208,6 +209,7 @@ always @(posedge clk_sys) begin
 	mod_woodp<= (mod == 8);
 	mod_eeek <= (mod == 9);
 	mod_alib <= (mod == 10);
+	mod_ponp <= (mod == 11);
 end
 
 reg [7:0] sw[8];
@@ -263,7 +265,7 @@ reg btn_left_2=0;
 reg btn_right_2=0;
 reg btn_fire_2=0;
 
-wire no_rotate = status[2] & ~direct_video;
+wire no_rotate = status[2] & ~direct_video & ~mod_ponp;
 
 wire m_up,m_down,m_left,m_right;
 joyonedir jod
@@ -320,6 +322,8 @@ arcade_rotate_fx #(288,224,8) arcade_video
 	.HSync(hs),
 	.VSync(vs),
 
+	.no_rotate(no_rotate | mod_ponp),
+
 	.rotate_ccw(0),
 	.fx(status[5:3])
 );
@@ -328,6 +332,9 @@ wire [7:0] audio;
 assign AUDIO_L = {audio, audio};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
+
+wire [7:0] in0xor = mod_ponp ? 8'hE0 : 8'hFF;
+wire [7:0] in1xor = mod_ponp ? 8'h00 : 8'hFF;
 
 pacman pacman
 (
@@ -345,9 +352,10 @@ pacman pacman
 
 	.O_AUDIO(audio),
 
-	.in0(sw[0] & ~{mod_eeek & m_fire_2, mod_alib & m_fire, m_coin, m_cheat, m_down, m_right, m_left, m_up}),
-	.in1(sw[1] & ~{mod_gm & m_fire_2, m_start_2 | (mod_eeek & m_fire), m_start, (mod_gm & m_fire) | (mod_alib & m_fire_2), m_down_2,m_right_2,m_left_2,m_up_2}),
+	.in0(sw[0] & (in0xor ^ {mod_eeek & m_fire_2, mod_alib & m_fire, m_coin, m_cheat | (mod_ponp & m_fire), m_down, m_right, m_left, m_up})),
+	.in1(sw[1] & (in1xor ^ {mod_gm & m_fire_2, m_start_2 | (mod_eeek & m_fire), m_start, (mod_gm & m_fire) | (mod_alib & m_fire_2) | (mod_ponp & m_fire_2), m_down_2,m_right_2,m_left_2,m_up_2})),
 	.dipsw(sw[2]),
+	.dipsw2(mod_ponp ? sw[3] : 8'hFF),
 
 	.mod_plus(mod_plus),
 	.mod_bird(mod_bird),
@@ -356,6 +364,7 @@ pacman pacman
 	.mod_woodp(mod_woodp),
 	.mod_eeek(mod_eeek),
 	.mod_alib(mod_alib),
+	.mod_ponp(mod_ponp),
 
 	.RESET(RESET | status[0] | buttons[1]),
 	.CLK(clk_sys),

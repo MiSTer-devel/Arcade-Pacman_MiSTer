@@ -38,6 +38,7 @@
 --
 -- Revision list
 --
+-- version 006 Merge different variants by Alexey Melnikov
 -- version 005 Papilio release by Jack Gassett
 -- version 004 spartan3e release
 -- version 003 Jan 2006 release, general tidy up
@@ -67,6 +68,7 @@ port
 	in0        : in  std_logic_vector(7 downto 0);
 	in1        : in  std_logic_vector(7 downto 0);
 	dipsw      : in  std_logic_vector(7 downto 0);
+	dipsw2     : in  std_logic_vector(7 downto 0);
 	--
 	mod_plus   : in  std_logic;
 	mod_bird   : in  std_logic;
@@ -75,6 +77,7 @@ port
 	mod_woodp  : in  std_logic;
 	mod_eeek   : in  std_logic;
 	mod_alib   : in  std_logic;
+	mod_ponp   : in  std_logic;
 	--
 	dn_addr    : in  std_logic_vector(15 downto 0);
 	dn_data    : in  std_logic_vector(7 downto 0);
@@ -212,9 +215,9 @@ begin
 
       if (hcnt = "010010111") then -- 097
 		  O_HBLANK <= '1';
-      elsif (hcnt = "010001111") then -- 08F
+      elsif (hcnt = "010001111" and mod_ponp = '0') or (hcnt = "111111111" and mod_ponp = '1') then -- 08F
         hblank <= '1';
-      elsif (hcnt = "011101111") then
+      elsif (hcnt = "011101111" and mod_ponp = '0') or (hcnt = "011111111" and mod_ponp = '1') then
         hblank <= '0'; -- 0EF
       elsif (hcnt = "011110111") then -- 0F7
 		  O_HBLANK <= '0';
@@ -402,7 +405,8 @@ begin
 
 	hp <= hcnt(7 downto 3) when c_flip = '0' else not hcnt(7 downto 3);
 	vp <= vcnt(7 downto 3) when c_flip = '0' else not vcnt(7 downto 3);
-	vram_addr <= vram_addr_ab when mod_alib = '0' else '0' & hcnt(2) & vp & hp when hcnt(8)='1' else
+	vram_addr <= vram_addr_ab when mod_alib = '0' and mod_ponp = '0' else '0' & hcnt(2) & vp & hp when hcnt(8)='1' else
+             x"FF" & hcnt(6 downto 4) & hcnt(2) when hblank = '1' and mod_ponp = '1' else
              x"EF" & hcnt(6 downto 4) & hcnt(2) when hblank = '1' else
              '0' & hcnt(2) & hp(3) & hp(3) & hp(3) & hp(3) & hp(0) & vp;
 
@@ -589,7 +593,7 @@ begin
 
   p_cpu_data_in_mux_comb : process(cpu_addr, cpu_iorq_l, cpu_m1_l, sync_bus_wreq_l,
                                    iodec_in0_l, iodec_in1_l, iodec_dipsw_l, cpu_vec_reg, sync_bus_reg, rom_data,
-											  rams_data_out, in0, in1, dipsw, inj, iodec_dipsw2_l,
+											  rams_data_out, in0, in1, dipsw, inj, iodec_dipsw2_l, dipsw2,
 											  ram2_cs, ram2_data, iodec_myst1_l, iodec_myst2_l, mcnt, mcnt2, iodec_nop_l)
   begin
     -- simplifed again
@@ -607,7 +611,7 @@ begin
         if (iodec_in0_l   = '0') then cpu_data_in <= in0(7 downto 4) & inj; end if;
         if (iodec_in1_l   = '0') then cpu_data_in <= in1; end if;
         if (iodec_dipsw_l = '0') then cpu_data_in <= dipsw; end if;
-        if (iodec_dipsw2_l= '0') then cpu_data_in <= x"FF"; end if;
+        if (iodec_dipsw2_l= '0') then cpu_data_in <= dipsw2; end if;
         if (iodec_myst1_l = '0') then cpu_data_in <= "0000" & mcnt(3 downto 0); end if;
         if (iodec_myst2_l = '0') then cpu_data_in <= "0000000" & mcnt2(10); end if;
         if (iodec_nop_l   = '0') then cpu_data_in <= x"BF"; end if;
@@ -703,7 +707,8 @@ begin
       O_GREEN   => O_VIDEO_G,
       O_BLUE    => O_VIDEO_B,
       --
-		MRTNT     => mod_mrtnt or mod_woodp,
+      MRTNT     => mod_mrtnt or mod_woodp,
+      PONP      => mod_ponp,
       ENA_6     => ena_6,
       CLK       => clk
       );
@@ -728,11 +733,11 @@ begin
       I_WR1_L       => wr1_l,
       I_WR0_L       => wr0_l,
       I_SOUND_ON    => c_sound,
-		--
-		dn_addr   => dn_addr,
-		dn_data   => dn_data,
-		dn_wr     => dn_wr,
-		--		
+      --
+      dn_addr   => dn_addr,
+      dn_data   => dn_data,
+      dn_wr     => dn_wr,
+      --		
       O_AUDIO       => O_AUDIO,
       ENA_6         => ena_6,
       CLK           => clk
