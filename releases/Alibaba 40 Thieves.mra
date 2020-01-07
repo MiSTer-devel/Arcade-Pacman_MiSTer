@@ -1,0 +1,44 @@
+<misterromdescription>
+	<name>Ali Baba and 40 Thieves</name>
+	<mameversion>0216</mameversion>
+	<mratimestamp>201911270000</mratimestamp>
+	<year>1982</year>
+	<manufacturer>Sega</manufacturer>
+	<category>Adventure / Arabian</category>
+	<category>Maze</category>
+	<rbf>pacman</rbf>
+	<switches default="FF,FF,C9">
+		<dip bits="15"    name="Cabinet" ids="Cocktail,Upright"/>
+		<dip bits="16,17" name="Coinage" ids="2c/1cr,1c/1cr,1c/2cr,Free Play" values="3,1,2,0"/>
+		<dip bits="18,19" name="Lives" ids="1,2,3,5"/>
+		<dip bits="20,21" name="Bonus Life After" ids="10000,15000,20000,None"/>
+		<dip bits="22"    name="Difficulty" ids="Hard,Normal"/>
+	</switches>
+	<rom index="1">
+		<part>0A</part>
+	</rom>  
+	<rom index="0" zip="alibaba.zip" md5="ac9f54abb0b408a9481235d239888099" type="merged|nonmerged">
+		<part name="6e"/>
+		<part name="6f"/>
+		<part name="6h"/>
+		<part name="6k"/>
+		<part name="6l"/>
+		<part name="6l"/>
+		<part name="6m"/>
+		<part name="6m"/>
+		<part name="6m"/>
+		<part name="6m"/>
+		<part name="5e"/>
+		<part name="5h"/>
+		<part name="5f"/>
+		<part name="5k"/>
+		<part name="5e"/>
+		<part name="5h"/>
+		<part name="5f"/>
+		<part name="5k"/>
+		<part name="82s126.1m"/>
+		<part name="82s129.a4"/>
+		<part name="82s126.3m"/>
+		<part name="82s123.e7"/>
+	</rom>
+</misterromdescription>

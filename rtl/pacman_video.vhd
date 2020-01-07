@@ -290,10 +290,10 @@ gfx_cs  <= '1' when dn_addr(15 downto 13) = "100" else '0';
 		end if;
 	end process;
 
-rom4a_cs <= '1' when dn_addr(9 downto 8) = "01" else '0';
+	rom4a_cs <= '1' when dn_addr(9 downto 8) = "01" else '0';
 
-col_rom_4a : work.dpram generic map (8,8)
-port map
+	col_rom_4a : work.dpram generic map (8,8)
+	port map
 	(
 		clock_a   => CLK,
 		wren_a    => dn_wr and rom4a_cs and prom_cs,
@@ -305,7 +305,7 @@ port map
 		address_b(6 downto 2) => vout_db(4 downto 0),
 		address_b(1 downto 0) => shift_op(1 downto 0),
 		q_b       => lut_4a
-  );
+	);
 
 
 	cntr_ld <= '1' when (I_HCNT(3 downto 0) = "0111") and (vout_hblank='1' or vout_obj_on='0') else '0';
