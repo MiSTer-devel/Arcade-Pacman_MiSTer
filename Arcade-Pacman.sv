@@ -187,6 +187,8 @@ reg mod_bird = 0;
 reg mod_ms   = 0;
 reg mod_gork = 0;
 reg mod_mrtnt= 0;
+reg mod_woodp= 0;
+
 wire mod_gm = mod_gork | mod_mrtnt;
 
 always @(posedge clk_sys) begin
@@ -201,6 +203,7 @@ always @(posedge clk_sys) begin
 	mod_ms   <= (mod == 5);
 	mod_gork <= (mod == 6);
 	mod_mrtnt<= (mod == 7);
+	mod_woodp<= (mod == 8);
 end
 
 reg [7:0] sw[8];
@@ -346,6 +349,7 @@ pacman pacman
 	.mod_bird(mod_bird),
 	.mod_ms(mod_ms),
 	.mod_mrtnt(mod_mrtnt),
+	.mod_woodp(mod_woodp),
 
 	.RESET(RESET | status[0] | buttons[1]),
 	.CLK(clk_sys),

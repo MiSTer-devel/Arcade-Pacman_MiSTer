@@ -72,6 +72,7 @@ port
 	mod_bird   : in  std_logic;
 	mod_mrtnt  : in  std_logic;
 	mod_ms     : in  std_logic;
+	mod_woodp  : in  std_logic;
 	--
 	dn_addr    : in  std_logic_vector(15 downto 0);
 	dn_data    : in  std_logic_vector(7 downto 0);
@@ -600,7 +601,7 @@ begin
       O_GREEN   => O_VIDEO_G,
       O_BLUE    => O_VIDEO_B,
       --
-		MRTNT     => mod_mrtnt,
+		MRTNT     => mod_mrtnt or mod_woodp,
       ENA_6     => ena_6,
       CLK       => clk
       );
