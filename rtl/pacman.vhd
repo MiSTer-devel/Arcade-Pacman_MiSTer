@@ -73,6 +73,7 @@ port
 	mod_mrtnt  : in  std_logic;
 	mod_ms     : in  std_logic;
 	mod_woodp  : in  std_logic;
+	mod_eeek   : in  std_logic;
 	--
 	dn_addr    : in  std_logic_vector(15 downto 0);
 	dn_data    : in  std_logic_vector(7 downto 0);
@@ -112,6 +113,8 @@ architecture RTL of PACMAN is
     signal cpu_data_out     : std_logic_vector(7 downto 0);
     signal cpu_data_in      : std_logic_vector(7 downto 0);
 
+    signal dcnt             : std_logic_vector(1 downto 0);
+    signal old_rd_l         : std_logic;
     signal rom_data         : std_logic_vector(7 downto 0);
 
     signal sync_bus_cs_l    : std_logic;
@@ -562,13 +565,33 @@ begin
   	 address_b => ab(11 downto 0),
   	 q_b       => rams_data_out
   );
+
+  eeek_decrypt : process
+  begin
+  	wait until rising_edge(clk);
+  	if watchdog_reset_l = '0' then
+  		dcnt <= "01";
+  	else
+  		old_rd_l <= cpu_rd_l;
+  		if old_rd_l = '1' and cpu_rd_l = '0' and cpu_iorq_l = '0' and cpu_m1_l = '1' then
+  			if cpu_addr(0) = '1' then
+  				dcnt <= dcnt - "1";
+  			else
+  				dcnt <= dcnt + "1";
+  			end if;
+  		end if;
+  	end if;
+  end process;
+
   
   u_program_rom: work.rom_descrambler
   port map(
   	 CLK      => clk,
   	 MRTNT    => mod_mrtnt,
   	 MSPACMAN => mod_ms,
+  	 EEEK     => mod_eeek,
   	 PLUS     => mod_plus,
+	 dcnt     => dcnt,
   	 cpu_m1_l => cpu_m1_l, 
   	 addr     => cpu_addr,
   	 data     => rom_data,

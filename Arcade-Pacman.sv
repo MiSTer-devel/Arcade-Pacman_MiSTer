@@ -188,6 +188,7 @@ reg mod_ms   = 0;
 reg mod_gork = 0;
 reg mod_mrtnt= 0;
 reg mod_woodp= 0;
+reg mod_eeek = 0;
 
 wire mod_gm = mod_gork | mod_mrtnt;
 
@@ -204,6 +205,7 @@ always @(posedge clk_sys) begin
 	mod_gork <= (mod == 6);
 	mod_mrtnt<= (mod == 7);
 	mod_woodp<= (mod == 8);
+	mod_eeek <= (mod == 9);
 end
 
 reg [7:0] sw[8];
@@ -341,8 +343,8 @@ pacman pacman
 
 	.O_AUDIO(audio),
 
-	.in0(sw[0] & ~{2'b00, m_coin, m_cheat, m_down, m_right, m_left, m_up}),
-	.in1(sw[1] & ~{mod_gm ? m_fire_2 : 1'b0, m_start_2, m_start, mod_gm & m_fire, m_down_2,m_right_2,m_left_2,m_up_2}),
+	.in0(sw[0] & ~{mod_eeek & m_fire_2, 1'b0, m_coin, m_cheat, m_down, m_right, m_left, m_up}),
+	.in1(sw[1] & ~{mod_gm & m_fire_2, m_start_2 | (mod_eeek & m_fire), m_start, mod_gm & m_fire, m_down_2,m_right_2,m_left_2,m_up_2}),
 	.dipsw(sw[2]),
 
 	.mod_plus(mod_plus),
@@ -350,6 +352,7 @@ pacman pacman
 	.mod_ms(mod_ms),
 	.mod_mrtnt(mod_mrtnt),
 	.mod_woodp(mod_woodp),
+	.mod_eeek(mod_eeek),
 
 	.RESET(RESET | status[0] | buttons[1]),
 	.CLK(clk_sys),
