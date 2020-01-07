@@ -367,7 +367,7 @@ begin
 		end if;
 	end process;
 
-	p_sprite_ram_ip_comb : process(vout_hblank_t1, video_op_sel, sprite_ram_reg, lut_4a_t1)
+	p_sprite_ram_ip_comb : process(vout_hblank_t1, video_op_sel, sprite_ram_reg, lut_4a_t1, shift_op_t1)
 	begin
 	-- 3a
 		if (vout_hblank_t1 = '0') then

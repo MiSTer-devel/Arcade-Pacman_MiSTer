@@ -132,6 +132,15 @@ always @(posedge clk_sys) begin
 	ce_6m <= !div;
 end
 
+reg ce_4m;
+always @(posedge clk_sys) begin
+	reg [2:0] div;
+	
+	div <= div + 1'd1;
+	if(div == 5) div <= 0;
+	ce_4m <= !div;
+end
+
 ///////////////////////////////////////////////////
 
 wire [31:0] status;
@@ -191,6 +200,7 @@ reg mod_woodp= 0;
 reg mod_eeek = 0;
 reg mod_alib = 0;
 reg mod_ponp = 0;
+reg mod_van  = 0;
 
 wire mod_gm = mod_gork | mod_mrtnt;
 
@@ -210,6 +220,7 @@ always @(posedge clk_sys) begin
 	mod_eeek <= (mod == 9);
 	mod_alib <= (mod == 10);
 	mod_ponp <= (mod == 11);
+	mod_van  <= (mod == 12);
 end
 
 reg [7:0] sw[8];
@@ -329,9 +340,9 @@ arcade_rotate_fx #(288,224,8) arcade_video
 );
 
 wire [7:0] audio;
-assign AUDIO_L = {audio, audio};
+assign AUDIO_L = {audio, 8'd0};
 assign AUDIO_R = AUDIO_L;
-assign AUDIO_S = 0;
+assign AUDIO_S = mod_van;
 
 wire [7:0] in0xor = mod_ponp ? 8'hE0 : 8'hFF;
 wire [7:0] in1xor = mod_ponp ? 8'h00 : 8'hFF;
@@ -352,10 +363,29 @@ pacman pacman
 
 	.O_AUDIO(audio),
 
-	.in0(sw[0] & (in0xor ^ {mod_eeek & m_fire_2, mod_alib & m_fire, m_coin, m_cheat | (mod_ponp & m_fire), m_down, m_right, m_left, m_up})),
-	.in1(sw[1] & (in1xor ^ {mod_gm & m_fire_2, m_start_2 | (mod_eeek & m_fire), m_start, (mod_gm & m_fire) | (mod_alib & m_fire_2) | (mod_ponp & m_fire_2), m_down_2,m_right_2,m_left_2,m_up_2})),
+	.in0(sw[0] & (in0xor ^ {
+									mod_eeek & m_fire_2,
+									mod_alib & m_fire,
+									m_coin,
+									m_cheat | (mod_ponp & m_fire) | (mod_van & m_fire),
+									m_down,
+									m_right,
+									m_left,
+									m_up
+								})),
+
+	.in1(sw[1] & (in1xor ^ {
+									mod_gm & m_fire_2,
+									m_start_2 | (mod_eeek & m_fire),
+									m_start,
+									(mod_gm & m_fire) | (mod_alib & m_fire_2) | (mod_ponp & m_fire_2) | (mod_van & m_fire_2),
+									m_down_2,
+									m_right_2,
+									m_left_2,
+									m_up_2
+								})),
 	.dipsw(sw[2]),
-	.dipsw2(mod_ponp ? sw[3] : 8'hFF),
+	.dipsw2((mod_ponp | mod_van) ? sw[3] : 8'hFF),
 
 	.mod_plus(mod_plus),
 	.mod_bird(mod_bird),
@@ -364,11 +394,13 @@ pacman pacman
 	.mod_woodp(mod_woodp),
 	.mod_eeek(mod_eeek),
 	.mod_alib(mod_alib),
-	.mod_ponp(mod_ponp),
+	.mod_ponp(mod_ponp | mod_van),
+	.mod_van(mod_van),
 
 	.RESET(RESET | status[0] | buttons[1]),
 	.CLK(clk_sys),
-	.ENA_6(ce_6m)
+	.ENA_6(ce_6m),
+	.ENA_4(ce_4m)
 );
 
 endmodule

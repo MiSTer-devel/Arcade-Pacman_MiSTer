@@ -78,6 +78,7 @@ port
 	mod_eeek   : in  std_logic;
 	mod_alib   : in  std_logic;
 	mod_ponp   : in  std_logic;
+	mod_van    : in  std_logic;
 	--
 	dn_addr    : in  std_logic_vector(15 downto 0);
 	dn_data    : in  std_logic_vector(7 downto 0);
@@ -85,7 +86,8 @@ port
 	--
 	RESET      : in  std_logic;
 	CLK        : in  std_logic;
-	ENA_6   	  : in  std_logic
+	ENA_6      : in  std_logic;
+	ENA_4      : in  std_logic
 );
 end;
 
@@ -112,8 +114,6 @@ architecture RTL of PACMAN is
     signal cpu_rfsh_l       : std_logic;
     signal cpu_wait_l       : std_logic;
     signal cpu_int_l        : std_logic;
-    signal cpu_nmi_l        : std_logic;
-    signal cpu_busrq_l      : std_logic;
     signal cpu_addr         : std_logic_vector(15 downto 0);
     signal cpu_data_out     : std_logic_vector(7 downto 0);
     signal cpu_data_in      : std_logic_vector(7 downto 0);
@@ -172,6 +172,17 @@ architecture RTL of PACMAN is
     -- watchdog
     signal watchdog_cnt     : std_logic_vector(7 downto 0);
     signal watchdog_reset_l : std_logic;
+	 
+    signal sn1_ce           : std_logic;
+    signal sn2_ce           : std_logic;
+    signal sn1_ready        : std_logic;
+    signal sn2_ready        : std_logic;
+    signal sn_d             : std_logic_vector(7 downto 0);
+    signal old_we           : std_logic;
+    signal wav1,wav2        : signed(7 downto 0);
+    signal wav3             : signed(8 downto 0);
+	 signal wav4             : std_logic_vector(7 downto 0);
+
 begin
 
   --
@@ -282,10 +293,6 @@ begin
     end if;
   end process;
 
-  -- other cpu signals
-  cpu_busrq_l <= '1';
-  cpu_nmi_l   <= '1';
-
   p_cpu_ena : process(hcnt, ena_6)
   begin
     cpu_ena <= '0';
@@ -300,9 +307,9 @@ begin
               CLK_n   => clk,
               CLKEN   => cpu_ena,
               WAIT_n  => cpu_wait_l,
-              INT_n   => cpu_int_l,
-              NMI_n   => cpu_nmi_l,
-              BUSRQ_n => cpu_busrq_l,
+              INT_n   => cpu_int_l or     mod_van,
+              NMI_n   => cpu_int_l or not mod_van,
+              BUSRQ_n => '1',
               M1_n    => cpu_m1_l,
               MREQ_n  => cpu_mreq_l,
               IORQ_n  => cpu_iorq_l,
@@ -708,7 +715,7 @@ begin
       O_BLUE    => O_VIDEO_B,
       --
       MRTNT     => mod_mrtnt or mod_woodp,
-      PONP      => mod_ponp,
+      PONP      => mod_ponp and not mod_van,
       ENA_6     => ena_6,
       CLK       => clk
       );
@@ -734,13 +741,74 @@ begin
       I_WR0_L       => wr0_l,
       I_SOUND_ON    => c_sound,
       --
-      dn_addr   => dn_addr,
-      dn_data   => dn_data,
-      dn_wr     => dn_wr,
+      dn_addr       => dn_addr,
+      dn_data       => dn_data,
+      dn_wr         => dn_wr,
       --		
-      O_AUDIO       => O_AUDIO,
+      O_AUDIO       => wav4,
       ENA_6         => ena_6,
       CLK           => clk
       );
 
+	process(clk, reset) begin
+		if reset = '1' then
+			sn1_ce <= '1';
+			sn2_ce <= '1';
+		elsif rising_edge(clk) then
+	
+			if sn1_ready = '1' then
+				sn1_ce <= '1';
+			end if;
+	
+			if sn2_ready = '1' then
+				sn2_ce <= '1';
+			end if;
+	
+			old_we <= cpu_wr_l;
+			if old_we = '1' and cpu_wr_l = '0' and cpu_iorq_l = '0' then
+				if cpu_addr(7 downto 0) = X"01" then
+					sn1_ce <= '0';
+					sn_d <= cpu_data_out;
+				end if;
+				if cpu_addr(7 downto 0) = X"02" then
+					sn2_ce <= '0';
+					sn_d <= cpu_data_out;
+				end if;
+			end if;
+		end if;
+	end process;
+	
+	sn1 : entity work.sn76489_top
+	generic map (
+		clock_div_16_g => 1
+	)
+	port map (
+		clock_i    => clk,
+		clock_en_i => ena_4,
+		res_n_i    => not RESET,
+		ce_n_i     => sn1_ce,
+		we_n_i     => sn1_ce,
+		ready_o    => sn1_ready,
+		d_i        => sn_d,
+		aout_o     => wav1
+	);
+	
+	sn2 : entity work.sn76489_top
+	generic map (
+		clock_div_16_g => 1
+	)
+	port map (
+		clock_i    => clk,
+		clock_en_i => ena_4,
+		res_n_i    => not RESET,
+		ce_n_i     => sn2_ce,
+		we_n_i     => sn2_ce,
+		ready_o    => sn2_ready,
+		d_i        => sn_d,
+		aout_o     => wav2
+	);
+	
+	wav3 <= resize(wav1, 9) + resize(wav2, 9);
+
+	O_AUDIO <= wav4 when mod_van = '0' else std_logic_vector(wav3(8 downto 1));
 end RTL;
