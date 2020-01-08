@@ -4,6 +4,12 @@ set_global_assignment -name VHDL_FILE rtl/cpu/T80_Pack.vhd
 set_global_assignment -name VHDL_FILE rtl/cpu/T80_MCode.vhd
 set_global_assignment -name VHDL_FILE rtl/cpu/T80_ALU.vhd
 set_global_assignment -name VHDL_FILE rtl/cpu/T80.vhd
+set_global_assignment -name VHDL_FILE rtl/sn76489/sn76489_top.vhd
+set_global_assignment -name VHDL_FILE rtl/sn76489/sn76489_tone.vhd
+set_global_assignment -name VHDL_FILE rtl/sn76489/sn76489_noise.vhd
+set_global_assignment -name VHDL_FILE rtl/sn76489/sn76489_latch_ctrl.vhd
+set_global_assignment -name VHDL_FILE rtl/sn76489/sn76489_clock_div.vhd
+set_global_assignment -name VHDL_FILE rtl/sn76489/sn76489_attenuator.vhd
 set_global_assignment -name VHDL_FILE rtl/dpram.vhd
 set_global_assignment -name VHDL_FILE rtl/pacman_rom_descrambler.vhd
 set_global_assignment -name VHDL_FILE rtl/pacman_vram_addr.vhd

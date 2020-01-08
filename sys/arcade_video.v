@@ -11,7 +11,7 @@
 //  9 : 3R 3G 3B
 // 12 : 4R 4G 4B
 
-module arcade_rotate_fx #(parameter WIDTH=320, HEIGHT=240, DW=8, CCW=0, GAMMA=1)
+module arcade_rotate_fx #(parameter WIDTH=320, HEIGHT=240, DW=8, GAMMA=1)
 (
 	input         clk_video,
 	input         ce_pix,
@@ -44,6 +44,7 @@ module arcade_rotate_fx #(parameter WIDTH=320, HEIGHT=240, DW=8, CCW=0, GAMMA=1)
 	input   [2:0] fx,
 	input         forced_scandoubler,
 	input         no_rotate,
+	input         rotate_ccw,
 	input         direct_video,
 	inout  [21:0] gamma_bus
 );
@@ -79,10 +80,12 @@ arcade_vga #(DW) vga
 wire [DW-1:0] RGB_out;
 wire rhs,rvs,rhblank,rvblank;
 
-screen_rotate #(WIDTH,HEIGHT,DW,4,CCW) rotator
+screen_rotate #(WIDTH,HEIGHT,DW,4) rotator
 (
 	.clk(VGA_CLK),
 	.ce(CE),
+
+	.ccw(rotate_ccw),
 
 	.video_in(RGB_fix),
 	.hblank(HBL),
@@ -375,10 +378,12 @@ endmodule
 // Output timings are incompatible with any TV/VGA mode.
 // The output is supposed to be send to scaler input.
 //
-module screen_rotate #(parameter WIDTH=320, HEIGHT=240, DEPTH=8, MARGIN=4, CCW=0)
+module screen_rotate #(parameter WIDTH=320, HEIGHT=240, DEPTH=8, MARGIN=4)
 (
 	input              clk,
 	input              ce,
+
+	input              ccw,
 
 	input  [DEPTH-1:0] video_in,
 	input              hblank,
@@ -420,7 +425,7 @@ always @(posedge clk) begin
 	reg [aw-1:0] addr_row;
 
 	if(en_we) begin
-		addr_in <= CCW ? addr_in-HEIGHT[aw-1:0] : addr_in+HEIGHT[aw-1:0];
+		addr_in <= ccw ? addr_in-HEIGHT[aw-1:0] : addr_in+HEIGHT[aw-1:0];
 		xpos <= xpos + 1;
 	end
 
@@ -429,17 +434,17 @@ always @(posedge clk) begin
 	if(~old_blank & blank) begin
 		xpos <= 0;
 		ypos <= ypos + 1;
-		addr_in  <= CCW ? addr_row + 1'd1 : addr_row - 1'd1;
-		addr_row <= CCW ? addr_row + 1'd1 : addr_row - 1'd1;
+		addr_in  <= ccw ? addr_row + 1'd1 : addr_row - 1'd1;
+		addr_row <= ccw ? addr_row + 1'd1 : addr_row - 1'd1;
 	end
 
 	if(~old_vblank & vblank) begin
 		if(buff) begin
-			addr_in  <= CCW ? bufsize[aw-1:0]-HEIGHT[aw-1:0] : HEIGHT[aw-1:0]-1'd1;
-			addr_row <= CCW ? bufsize[aw-1:0]-HEIGHT[aw-1:0] : HEIGHT[aw-1:0]-1'd1;
+			addr_in  <= ccw ? bufsize[aw-1:0]-HEIGHT[aw-1:0] : HEIGHT[aw-1:0]-1'd1;
+			addr_row <= ccw ? bufsize[aw-1:0]-HEIGHT[aw-1:0] : HEIGHT[aw-1:0]-1'd1;
 		end else begin
-			addr_in  <= CCW ? bufsize[aw-1:0]+bufsize[aw-1:0]-HEIGHT[aw-1:0] : bufsize[aw-1:0]+HEIGHT[aw-1:0]-1'd1;
-			addr_row <= CCW ? bufsize[aw-1:0]+bufsize[aw-1:0]-HEIGHT[aw-1:0] : bufsize[aw-1:0]+HEIGHT[aw-1:0]-1'd1;
+			addr_in  <= ccw ? bufsize[aw-1:0]+bufsize[aw-1:0]-HEIGHT[aw-1:0] : bufsize[aw-1:0]+HEIGHT[aw-1:0]-1'd1;
+			addr_row <= ccw ? bufsize[aw-1:0]+bufsize[aw-1:0]-HEIGHT[aw-1:0] : bufsize[aw-1:0]+HEIGHT[aw-1:0]-1'd1;
 		end
 		buff <= ~buff;
 		ypos <= 0;

@@ -38,6 +38,7 @@
 --
 -- Revision list
 --
+-- version 006 Merge different variants by Alexey Melnikov
 -- version 005 Papilio release by Jack Gassett
 -- version 004 spartan3e release
 -- version 003 Jan 2006 release, general tidy up
@@ -67,11 +68,17 @@ port
 	in0        : in  std_logic_vector(7 downto 0);
 	in1        : in  std_logic_vector(7 downto 0);
 	dipsw      : in  std_logic_vector(7 downto 0);
+	dipsw2     : in  std_logic_vector(7 downto 0);
 	--
 	mod_plus   : in  std_logic;
 	mod_bird   : in  std_logic;
 	mod_mrtnt  : in  std_logic;
 	mod_ms     : in  std_logic;
+	mod_woodp  : in  std_logic;
+	mod_eeek   : in  std_logic;
+	mod_alib   : in  std_logic;
+	mod_ponp   : in  std_logic;
+	mod_van    : in  std_logic;
 	--
 	dn_addr    : in  std_logic_vector(15 downto 0);
 	dn_data    : in  std_logic_vector(7 downto 0);
@@ -79,7 +86,8 @@ port
 	--
 	RESET      : in  std_logic;
 	CLK        : in  std_logic;
-	ENA_6   	  : in  std_logic
+	ENA_6      : in  std_logic;
+	ENA_4      : in  std_logic
 );
 end;
 
@@ -102,15 +110,23 @@ architecture RTL of PACMAN is
     signal cpu_mreq_l       : std_logic;
     signal cpu_iorq_l       : std_logic;
     signal cpu_rd_l         : std_logic;
+    signal cpu_wr_l         : std_logic;
     signal cpu_rfsh_l       : std_logic;
     signal cpu_wait_l       : std_logic;
     signal cpu_int_l        : std_logic;
-    signal cpu_nmi_l        : std_logic;
-    signal cpu_busrq_l      : std_logic;
     signal cpu_addr         : std_logic_vector(15 downto 0);
     signal cpu_data_out     : std_logic_vector(7 downto 0);
     signal cpu_data_in      : std_logic_vector(7 downto 0);
 
+    signal ram_we           : std_logic;
+    signal ram2_cs          : std_logic;
+    signal ram2_data        : std_logic_vector(7 downto 0);
+
+    signal mcnt             : std_logic_vector(7 downto 0);
+    signal mcnt2            : std_logic_vector(10 downto 0);
+    signal dcnt             : std_logic_vector(1 downto 0);
+    signal old_rd_l         : std_logic;
+    signal old_rd_l2        : std_logic;
     signal rom_data         : std_logic_vector(7 downto 0);
 
     signal sync_bus_cs_l    : std_logic;
@@ -120,6 +136,9 @@ architecture RTL of PACMAN is
     signal c_int            : std_logic;
     signal c_sound          : std_logic;
 
+    signal hp               : std_logic_vector( 4 downto 0);
+    signal vp               : std_logic_vector( 4 downto 0);
+    signal vram_addr        : std_logic_vector(11 downto 0);
     signal vram_addr_ab     : std_logic_vector(11 downto 0);
     signal ab               : std_logic_vector(11 downto 0);
 
@@ -145,10 +164,25 @@ architecture RTL of PACMAN is
     signal iodec_in1_l      : std_logic;
     signal iodec_dipsw_l    : std_logic;
     signal iodec_dipsw2_l   : std_logic;
+    signal iodec_myst1_l    : std_logic;
+    signal iodec_myst2_l    : std_logic;
+    signal iodec_nop_l      : std_logic;
+    signal iodec_01         : std_logic;
 
     -- watchdog
     signal watchdog_cnt     : std_logic_vector(7 downto 0);
     signal watchdog_reset_l : std_logic;
+	 
+    signal sn1_ce           : std_logic;
+    signal sn2_ce           : std_logic;
+    signal sn1_ready        : std_logic;
+    signal sn2_ready        : std_logic;
+    signal sn_d             : std_logic_vector(7 downto 0);
+    signal old_we           : std_logic;
+    signal wav1,wav2        : signed(7 downto 0);
+    signal wav3             : signed(8 downto 0);
+	 signal wav4             : std_logic_vector(7 downto 0);
+
 begin
 
   --
@@ -192,9 +226,9 @@ begin
 
       if (hcnt = "010010111") then -- 097
 		  O_HBLANK <= '1';
-      elsif (hcnt = "010001111") then -- 08F
+      elsif (hcnt = "010001111" and mod_ponp = '0') or (hcnt = "111111111" and mod_ponp = '1') then -- 08F
         hblank <= '1';
-      elsif (hcnt = "011101111") then
+      elsif (hcnt = "011101111" and mod_ponp = '0') or (hcnt = "011111111" and mod_ponp = '1') then
         hblank <= '0'; -- 0EF
       elsif (hcnt = "011110111") then -- 0F7
 		  O_HBLANK <= '0';
@@ -259,10 +293,6 @@ begin
     end if;
   end process;
 
-  -- other cpu signals
-  cpu_busrq_l <= '1';
-  cpu_nmi_l   <= '1';
-
   p_cpu_ena : process(hcnt, ena_6)
   begin
     cpu_ena <= '0';
@@ -277,14 +307,14 @@ begin
               CLK_n   => clk,
               CLKEN   => cpu_ena,
               WAIT_n  => cpu_wait_l,
-              INT_n   => cpu_int_l,
-              NMI_n   => cpu_nmi_l,
-              BUSRQ_n => cpu_busrq_l,
+              INT_n   => cpu_int_l or     mod_van,
+              NMI_n   => cpu_int_l or not mod_van,
+              BUSRQ_n => '1',
               M1_n    => cpu_m1_l,
               MREQ_n  => cpu_mreq_l,
               IORQ_n  => cpu_iorq_l,
               RD_n    => cpu_rd_l,
-              WR_n    => open,
+              WR_n    => cpu_wr_l,
               RFSH_n  => cpu_rfsh_l,
               HALT_n  => open,
               BUSAK_n => open,
@@ -380,13 +410,20 @@ begin
       FLIP    => c_flip
       );
 
-  p_ab_mux_comb : process(hcnt, cpu_addr, vram_addr_ab)
+	hp <= hcnt(7 downto 3) when c_flip = '0' else not hcnt(7 downto 3);
+	vp <= vcnt(7 downto 3) when c_flip = '0' else not vcnt(7 downto 3);
+	vram_addr <= vram_addr_ab when mod_alib = '0' and mod_ponp = '0' else '0' & hcnt(2) & vp & hp when hcnt(8)='1' else
+             x"FF" & hcnt(6 downto 4) & hcnt(2) when hblank = '1' and mod_ponp = '1' else
+             x"EF" & hcnt(6 downto 4) & hcnt(2) when hblank = '1' else
+             '0' & hcnt(2) & hp(3) & hp(3) & hp(3) & hp(3) & hp(0) & vp;
+
+  p_ab_mux_comb : process(hcnt, cpu_addr, vram_addr)
   begin
     --When 2H is low, the CPU controls the bus.
     if (hcnt(1) = '0') then
       ab <= cpu_addr(11 downto 0);
     else
-      ab <= vram_addr_ab;
+      ab <= vram_addr;
     end if;
   end process;
 
@@ -399,7 +436,9 @@ begin
     vram_l <= not (a or b);
   end process;
 
-  p_io_decode_comb : process(sync_bus_r_w_l, sync_bus_stb, ab, cpu_addr, mod_bird)
+  iodec_01 <= '1' when cpu_addr(5 downto 1) = "00000" else '0';
+
+  p_io_decode_comb : process(sync_bus_r_w_l, sync_bus_stb, ab, cpu_addr, mod_bird, mod_alib, iodec_01)
     variable sel  : std_logic_vector(2 downto 0);
     variable dec  : std_logic_vector(7 downto 0);
     variable selb : std_logic_vector(1 downto 0);
@@ -439,13 +478,22 @@ begin
         when others => null;
       end case;
     end if;
-    iodec_out_l   <= dec(0);
-    iodec_wdr_l   <= dec(3);
+	 if mod_alib = '1' then
+		iodec_wdr_l   <= dec(0);
+		iodec_out_l   <= dec(3);
+	 else
+		iodec_out_l   <= dec(0);
+		iodec_wdr_l   <= dec(3);
+	 end if;
 
     iodec_in0_l   <= dec(4);
     iodec_in1_l   <= dec(5);
     iodec_dipsw_l <= dec(6);
-    iodec_dipsw2_l<= dec(7);
+    iodec_dipsw2_l<= dec(7) or mod_alib;
+
+    iodec_myst1_l <= dec(7) or not iodec_01 or     cpu_addr(0) or not mod_alib;
+    iodec_myst2_l <= dec(7) or not iodec_01 or not cpu_addr(0) or not mod_alib;
+    iodec_nop_l   <= dec(7) or     iodec_01                    or not mod_alib;
 
     -- 7M
     decb := "1111";
@@ -460,8 +508,13 @@ begin
       end case;
     end if;
     wr0_l <= decb(0);
-    wr1_l <= decb(1);
-    wr2_l <= decb(2);
+	 if mod_alib = '1' then
+		wr2_l <= decb(1);
+		wr1_l <= decb(2);
+	 else
+		wr1_l <= decb(1);
+		wr2_l <= decb(2);
+	 end if;
   end process;
 
   p_control_reg : process
@@ -508,9 +561,9 @@ begin
     end if;
   end process;
   
-  c_flip <= control_reg(5) when mod_bird = '1' else control_reg(3);
-  c_sound<= control_reg(3) when mod_bird = '1' else control_reg(1);
-  c_int  <= control_reg(1) when mod_bird = '1' else control_reg(0);
+  c_flip <= control_reg(1) when mod_alib = '1' else control_reg(5) when mod_bird = '1' else control_reg(3);
+  c_sound<= control_reg(0) when mod_alib = '1' else control_reg(3) when mod_bird = '1' else control_reg(1);
+  c_int  <= control_reg(2) when mod_alib = '1' else control_reg(1) when mod_bird = '1' else control_reg(0);
 
   p_db_mux_comb : process(hcnt, cpu_data_out, rams_data_out)
   begin
@@ -522,6 +575,24 @@ begin
       sync_bus_db <= rams_data_out;
     end if;
   end process;
+  
+  p_mcnt : process
+  begin
+    wait until rising_edge(clk);
+    mcnt <= (mcnt + "1") + ("0000000" & (in0(3) xor in0(2) xor in0(1) xor in0(0)));
+  end process;
+
+  p_mcnt2 : process
+  begin
+  	 wait until rising_edge(clk);
+  	 if (ena_6 = '1') then
+		old_rd_l2 <= cpu_rd_l;
+  		if iodec_myst2_l = '0' and old_rd_l2 = '1' and cpu_rd_l = '0' then
+  			mcnt2 <= mcnt2 + "1";
+  		end if;
+  	 end if;
+  end process;
+  
 
   inj <= in0(3 downto 0) when control_reg(5 downto 4) = "01" else
          in1(3 downto 0) when control_reg(5 downto 4) = "10" else
@@ -529,7 +600,8 @@ begin
 
   p_cpu_data_in_mux_comb : process(cpu_addr, cpu_iorq_l, cpu_m1_l, sync_bus_wreq_l,
                                    iodec_in0_l, iodec_in1_l, iodec_dipsw_l, cpu_vec_reg, sync_bus_reg, rom_data,
-											  rams_data_out, in0, in1, dipsw, inj, iodec_dipsw2_l)
+											  rams_data_out, in0, in1, dipsw, inj, iodec_dipsw2_l, dipsw2,
+											  ram2_cs, ram2_data, iodec_myst1_l, iodec_myst2_l, mcnt, mcnt2, iodec_nop_l)
   begin
     -- simplifed again
     if (cpu_iorq_l = '0') and (cpu_m1_l = '0') then
@@ -537,14 +609,19 @@ begin
     elsif (sync_bus_wreq_l = '0') then
       cpu_data_in <= sync_bus_reg;
     else
-      if (cpu_addr(14) = '0') then      -- ROM at 0000 - 3fff, 8000 - bfff
+		if ram2_cs = '1' then
+		  cpu_data_in <= ram2_data;
+      elsif (cpu_addr(14) = '0') then      -- ROM at 0000 - 3fff, 8000 - bfff
         cpu_data_in <= rom_data;
       else
         cpu_data_in <= rams_data_out;
         if (iodec_in0_l   = '0') then cpu_data_in <= in0(7 downto 4) & inj; end if;
         if (iodec_in1_l   = '0') then cpu_data_in <= in1; end if;
         if (iodec_dipsw_l = '0') then cpu_data_in <= dipsw; end if;
-        if (iodec_dipsw2_l= '0') then cpu_data_in <= x"FF"; end if;
+        if (iodec_dipsw2_l= '0') then cpu_data_in <= dipsw2; end if;
+        if (iodec_myst1_l = '0') then cpu_data_in <= "0000" & mcnt(3 downto 0); end if;
+        if (iodec_myst2_l = '0') then cpu_data_in <= "0000000" & mcnt2(10); end if;
+        if (iodec_nop_l   = '0') then cpu_data_in <= x"BF"; end if;
       end if;
     end if;
   end process;
@@ -561,13 +638,50 @@ begin
   	 address_b => ab(11 downto 0),
   	 q_b       => rams_data_out
   );
+
+  ram_we  <= '1' when cpu_wr_l = '0' and cpu_mreq_l = '0' and cpu_rfsh_l = '1' else '0';
+  ram2_cs <= '1' when cpu_addr(15 downto 12) = X"9" and mod_alib = '1' else '0';
+
+  u_ram2 : work.dpram generic map (10,8)
+  port map
+  (
+    clock_a   => clk,
+    enable_a  => ena_6,
+    wren_a    => ram_we and ram2_cs,
+    address_a => cpu_addr(9 downto 0),
+    data_a    => cpu_data_out,
+    q_a       => ram2_data,
+
+    clock_b   => clk,
+    address_b => cpu_addr(9 downto 0)
+  );
+
+  eeek_decrypt : process
+  begin
+  	wait until rising_edge(clk);
+  	if watchdog_reset_l = '0' then
+  		dcnt <= "01";
+  	else
+  		old_rd_l <= cpu_rd_l;
+  		if old_rd_l = '1' and cpu_rd_l = '0' and cpu_iorq_l = '0' and cpu_m1_l = '1' then
+  			if cpu_addr(0) = '1' then
+  				dcnt <= dcnt - "1";
+  			else
+  				dcnt <= dcnt + "1";
+  			end if;
+  		end if;
+  	end if;
+  end process;
+
   
   u_program_rom: work.rom_descrambler
   port map(
   	 CLK      => clk,
   	 MRTNT    => mod_mrtnt,
   	 MSPACMAN => mod_ms,
+  	 EEEK     => mod_eeek,
   	 PLUS     => mod_plus,
+	 dcnt     => dcnt,
   	 cpu_m1_l => cpu_m1_l, 
   	 addr     => cpu_addr,
   	 data     => rom_data,
@@ -600,7 +714,8 @@ begin
       O_GREEN   => O_VIDEO_G,
       O_BLUE    => O_VIDEO_B,
       --
-		MRTNT     => mod_mrtnt,
+      MRTNT     => mod_mrtnt or mod_woodp,
+      PONP      => mod_ponp and not mod_van,
       ENA_6     => ena_6,
       CLK       => clk
       );
@@ -625,14 +740,75 @@ begin
       I_WR1_L       => wr1_l,
       I_WR0_L       => wr0_l,
       I_SOUND_ON    => c_sound,
-		--
-		dn_addr   => dn_addr,
-		dn_data   => dn_data,
-		dn_wr     => dn_wr,
-		--		
-      O_AUDIO       => O_AUDIO,
+      --
+      dn_addr       => dn_addr,
+      dn_data       => dn_data,
+      dn_wr         => dn_wr,
+      --		
+      O_AUDIO       => wav4,
       ENA_6         => ena_6,
       CLK           => clk
       );
 
+	process(clk, reset) begin
+		if reset = '1' then
+			sn1_ce <= '1';
+			sn2_ce <= '1';
+		elsif rising_edge(clk) then
+	
+			if sn1_ready = '1' then
+				sn1_ce <= '1';
+			end if;
+	
+			if sn2_ready = '1' then
+				sn2_ce <= '1';
+			end if;
+	
+			old_we <= cpu_wr_l;
+			if old_we = '1' and cpu_wr_l = '0' and cpu_iorq_l = '0' then
+				if cpu_addr(7 downto 0) = X"01" then
+					sn1_ce <= '0';
+					sn_d <= cpu_data_out;
+				end if;
+				if cpu_addr(7 downto 0) = X"02" then
+					sn2_ce <= '0';
+					sn_d <= cpu_data_out;
+				end if;
+			end if;
+		end if;
+	end process;
+	
+	sn1 : entity work.sn76489_top
+	generic map (
+		clock_div_16_g => 1
+	)
+	port map (
+		clock_i    => clk,
+		clock_en_i => ena_4,
+		res_n_i    => not RESET,
+		ce_n_i     => sn1_ce,
+		we_n_i     => sn1_ce,
+		ready_o    => sn1_ready,
+		d_i        => sn_d,
+		aout_o     => wav1
+	);
+	
+	sn2 : entity work.sn76489_top
+	generic map (
+		clock_div_16_g => 1
+	)
+	port map (
+		clock_i    => clk,
+		clock_en_i => ena_4,
+		res_n_i    => not RESET,
+		ce_n_i     => sn2_ce,
+		we_n_i     => sn2_ce,
+		ready_o    => sn2_ready,
+		d_i        => sn_d,
+		aout_o     => wav2
+	);
+	
+	wav3 <= resize(wav1, 9) + resize(wav2, 9);
+
+	O_AUDIO <= wav4 when mod_van = '0' else std_logic_vector(wav3(8 downto 1));
 end RTL;

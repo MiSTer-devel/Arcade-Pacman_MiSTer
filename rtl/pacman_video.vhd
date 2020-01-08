@@ -38,6 +38,7 @@
 --
 -- Revision list
 --
+-- version 004 Merge different variants by Alexey Melnikov
 -- version 003 Jan 2006 release, general tidy up
 -- version 001 initial release
 --
@@ -69,6 +70,7 @@ port (
 	O_GREEN           : out   std_logic_vector(2 downto 0);
 	O_BLUE            : out   std_logic_vector(1 downto 0);
 	MRTNT             : in    std_logic := '0';  -- 1 to descramble Mr TNT ROMs, 0 otherwise
+	PONP              : in    std_logic := '0';
 	ENA_6             : in    std_logic;
 	CLK               : in    std_logic
 );
@@ -90,6 +92,7 @@ architecture RTL of PACMAN_VIDEO is
 	signal yflip              : std_logic;
 	signal obj_on             : std_logic;
 
+	signal cax                : std_logic_vector(1 downto 0);
 	signal ca                 : std_logic_vector(12 downto 0);
 	signal char_rom_5ef_dout  : std_logic_vector(7 downto 0);
 	signal char_rom_5ef_buf   : std_logic_vector(7 downto 0);
@@ -97,6 +100,7 @@ architecture RTL of PACMAN_VIDEO is
 	signal shift_regl         : std_logic_vector(3 downto 0);
 	signal shift_regu         : std_logic_vector(3 downto 0);
 	signal shift_op           : std_logic_vector(1 downto 0);
+	signal shift_op_t1        : std_logic_vector(1 downto 0);
 	signal shift_sel          : std_logic_vector(1 downto 0);
 
 	signal vout_obj_on        : std_logic;
@@ -107,14 +111,14 @@ architecture RTL of PACMAN_VIDEO is
 	signal vout_db            : std_logic_vector(4 downto 0);
 
 	signal cntr_ld            : std_logic;
-	signal sprite_ram_ip      : std_logic_vector(3 downto 0);
-	signal sprite_ram_op      : std_logic_vector(3 downto 0);
+	signal sprite_ram_ip      : std_logic_vector(5 downto 0);
+	signal sprite_ram_op      : std_logic_vector(5 downto 0);
 	signal ra                 : std_logic_vector(7 downto 0);
 	signal ra_t1              : std_logic_vector(7 downto 0);
 
 	signal lut_4a             : std_logic_vector(7 downto 0);
 	signal lut_4a_t1          : std_logic_vector(7 downto 0);
-	signal sprite_ram_reg     : std_logic_vector(3 downto 0);
+	signal sprite_ram_reg     : std_logic_vector(5 downto 0);
 
 	signal video_op_sel       : std_logic;
 	signal final_col          : std_logic_vector(3 downto 0);
@@ -126,8 +130,8 @@ architecture RTL of PACMAN_VIDEO is
 
 begin
 
-prom_cs <= '1' when dn_addr(15 downto 14) = "11" else '0';
-gfx_cs  <= '1' when dn_addr(15 downto 13) = "100" else '0';
+	prom_cs <= '1' when dn_addr(15 downto 14) = "11" else '0';
+	gfx_cs  <= '1' when dn_addr(15 downto 13) = "100" else '0';
 
 	-- ram enable is low when HBLANK_L is 0 (for sprite access) or
 	-- 2H is low (for cpu writes)
@@ -188,9 +192,12 @@ gfx_cs  <= '1' when dn_addr(15 downto 13) = "100" else '0';
 		end if;
 	end process;
 
+	cax(1) <= db_reg(0) when char_hblank_reg = '0' else I_HCNT(3);
+	cax(0) <= I_HCNT(2) xor yflip;
+
 	p_char_addr_comb : process(db_reg, I_HCNT,
 										char_match_reg, char_sum_reg, char_hblank_reg,
-										xflip, yflip, MRTNT)
+										xflip, yflip, MRTNT, PONP, cax)
 	begin
 		obj_on <= char_match_reg or I_HCNT(8); -- 256h not 256h_l
 
@@ -208,6 +215,14 @@ gfx_cs  <= '1' when dn_addr(15 downto 13) = "100" else '0';
 
 		ca(3) <= I_HCNT(2)       xor yflip;
 		ca(1) <= char_sum_reg(1) xor xflip;
+
+		if PONP = '1' then
+			if char_hblank_reg='0' then
+				ca(4 downto 3) <= cax(1) & not cax(0);
+			else
+				ca(4 downto 3) <= cax - "1";
+			end if;
+		end if;
 
 		-- descramble ROMs for Mr TNT (swap address lines A0 and A2)
 		if MRTNT = '1' then
@@ -290,10 +305,10 @@ gfx_cs  <= '1' when dn_addr(15 downto 13) = "100" else '0';
 		end if;
 	end process;
 
-rom4a_cs <= '1' when dn_addr(9 downto 8) = "01" else '0';
+	rom4a_cs <= '1' when dn_addr(9 downto 8) = "01" else '0';
 
-col_rom_4a : work.dpram generic map (8,8)
-port map
+	col_rom_4a : work.dpram generic map (8,8)
+	port map
 	(
 		clock_a   => CLK,
 		wren_a    => dn_wr and rom4a_cs and prom_cs,
@@ -305,10 +320,10 @@ port map
 		address_b(6 downto 2) => vout_db(4 downto 0),
 		address_b(1 downto 0) => shift_op(1 downto 0),
 		q_b       => lut_4a
-  );
+	);
 
 
-	cntr_ld <= '1' when (I_HCNT(3 downto 0) = "0111") and (vout_hblank='1' or vout_obj_on='0') else '0';
+	cntr_ld <= '1' when (I_HCNT(3 downto 0) = "0111") and (vout_hblank='1' or I_HBLANK='1' or vout_obj_on='0') else '0';
 
 	p_ra_cnt : process
 	begin
@@ -322,7 +337,7 @@ port map
 		end if;
 	end process;
 
-	u_sprite_ram : work.dpram generic map (8,4)
+	u_sprite_ram : work.dpram generic map (8,6)
 	port map
 	(
 		clock_a   => CLK,
@@ -337,8 +352,8 @@ port map
 		q_b       => sprite_ram_op
 	);
 
-	sprite_ram_reg <= sprite_ram_op when vout_obj_on_t1 = '1' else "0000";
-	video_op_sel <= '1' when not (sprite_ram_reg = "0000") else '0';
+	sprite_ram_reg <= sprite_ram_op when vout_obj_on_t1 = '1' else "000000";
+	video_op_sel <= '1' when not (sprite_ram_reg(5 downto 2) = "0000") else '0';
 
 	p_sprite_ram_ip_reg : process
 	begin
@@ -348,10 +363,11 @@ port map
 			vout_obj_on_t1 <= vout_obj_on;
 			vout_hblank_t1 <= vout_hblank;
 			lut_4a_t1 <= lut_4a;
+			shift_op_t1 <= shift_op;
 		end if;
 	end process;
 
-	p_sprite_ram_ip_comb : process(vout_hblank_t1, video_op_sel, sprite_ram_reg, lut_4a_t1)
+	p_sprite_ram_ip_comb : process(vout_hblank_t1, video_op_sel, sprite_ram_reg, lut_4a_t1, shift_op_t1)
 	begin
 	-- 3a
 		if (vout_hblank_t1 = '0') then
@@ -360,7 +376,7 @@ port map
 			if (video_op_sel = '1') then
 				sprite_ram_ip <= sprite_ram_reg;
 			else
-				sprite_ram_ip <= lut_4a_t1(3 downto 0);
+				sprite_ram_ip <= lut_4a_t1(3 downto 0) & shift_op_t1;
 			end if;
 		end if;
 	end process;
@@ -372,7 +388,7 @@ port map
 			final_col <= (others => '0');
 		else
 			if (video_op_sel = '1') then
-				final_col <= sprite_ram_reg; -- sprite
+				final_col <= sprite_ram_reg(5 downto 2); -- sprite
 			else
 				final_col <= lut_4a(3 downto 0);
 			end if;
