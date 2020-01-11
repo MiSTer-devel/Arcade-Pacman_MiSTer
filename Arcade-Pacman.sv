@@ -141,6 +141,15 @@ always @(posedge clk_sys) begin
 	ce_4m <= !div;
 end
 
+reg ce_1m79;
+always @(posedge clk_sys) begin
+	reg [3:0] div;
+	
+	div <= div + 1'd1;
+	if(div == 12) div <= 0;
+	ce_1m79 <= !div;
+end
+
 ///////////////////////////////////////////////////
 
 wire [31:0] status;
@@ -202,6 +211,7 @@ reg mod_alib = 0;
 reg mod_ponp = 0;
 reg mod_van  = 0;
 reg mod_pmm  = 0;
+reg mod_dshop= 0;
 
 wire mod_gm = mod_gork | mod_mrtnt;
 
@@ -223,6 +233,7 @@ always @(posedge clk_sys) begin
 	mod_ponp <= (mod == 11);
 	mod_van  <= (mod == 12);
 	mod_pmm  <= (mod == 13);
+	mod_dshop<= (mod == 14);
 end
 
 reg [7:0] sw[8];
@@ -341,8 +352,8 @@ arcade_rotate_fx #(288,224,8) arcade_video
 	.fx(status[5:3])
 );
 
-wire [7:0] audio;
-assign AUDIO_L = {audio, 8'd0};
+wire [9:0] audio;
+assign AUDIO_L = {audio, 6'd0};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = mod_van;
 
@@ -369,7 +380,7 @@ pacman pacman
 									mod_eeek & m_fire_2,
 									mod_alib & m_fire,
 									m_coin,
-									m_cheat | (mod_ponp & m_fire) | (mod_van & m_fire),
+									m_cheat | ((mod_ponp | mod_van | mod_dshop) & m_fire),
 									m_down,
 									m_right,
 									m_left,
@@ -380,14 +391,14 @@ pacman pacman
 									mod_gm & m_fire_2,
 									m_start_2 | (mod_eeek & m_fire),
 									m_start,
-									(mod_gm & m_fire) | (mod_alib & m_fire_2) | (mod_ponp & m_fire_2) | (mod_van & m_fire_2),
+									(mod_gm & m_fire) | ((mod_alib | mod_ponp | mod_van | mod_dshop) & m_fire_2),
 									~mod_pmm & m_down_2,
 									mod_pmm ? m_fire : m_right_2,
 									~mod_pmm & m_left_2,
 									~mod_pmm & m_up_2
 								})),
-	.dipsw(sw[2]),
-	.dipsw2((mod_ponp | mod_van) ? sw[3] : 8'hFF),
+	.dipsw1(sw[2]),
+	.dipsw2((mod_ponp | mod_van | mod_dshop) ? sw[3] : 8'hFF),
 
 	.mod_plus(mod_plus),
 	.mod_bird(mod_bird),
@@ -396,13 +407,15 @@ pacman pacman
 	.mod_woodp(mod_woodp),
 	.mod_eeek(mod_eeek),
 	.mod_alib(mod_alib),
-	.mod_ponp(mod_ponp | mod_van),
-	.mod_van(mod_van),
+	.mod_ponp(mod_ponp | mod_van | mod_dshop),
+	.mod_van(mod_van | mod_dshop),
+	.mod_dshop(mod_dshop),
 
 	.RESET(RESET | status[0] | buttons[1]),
 	.CLK(clk_sys),
 	.ENA_6(ce_6m),
-	.ENA_4(ce_4m)
+	.ENA_4(ce_4m),
+	.ENA_1M79(ce_1m79)
 );
 
 endmodule
