@@ -289,7 +289,7 @@ reg btn_left_2=0;
 reg btn_right_2=0;
 reg btn_fire_2=0;
 
-wire no_rotate = status[2] & ~direct_video & ~mod_ponp;
+wire no_rotate = status[2] | direct_video | mod_ponp;
 
 wire m_up,m_down,m_left,m_right;
 joyonedir jod
@@ -297,10 +297,10 @@ joyonedir jod
 	clk_sys,
 	mod_bird,
 	{
-		no_rotate ? btn_left  | joy1[1] : btn_up    | joy1[3],
-		no_rotate ? btn_right | joy1[0] : btn_down  | joy1[2],
-		no_rotate ? btn_down  | joy1[2] : btn_left  | joy1[1],
-		no_rotate ? btn_up    | joy1[3] : btn_right | joy1[0]
+		btn_up    | joy1[3],
+		btn_down  | joy1[2],
+		btn_left  | joy1[1],
+		btn_right | joy1[0]
 	},
 	{m_up,m_down,m_left,m_right}
 );
@@ -311,10 +311,10 @@ joyonedir jod_2
 	clk_sys,
 	mod_bird,
 	{
-		no_rotate ? btn_left_2  | joy2[1] : btn_up_2    | joy2[3],
-		no_rotate ? btn_right_2 | joy2[0] : btn_down_2  | joy2[2],
-		no_rotate ? btn_down_2  | joy2[2] : btn_left_2  | joy2[1],
-		no_rotate ? btn_up_2    | joy2[3] : btn_right_2 | joy2[0]
+		btn_up_2    | joy2[3],
+		btn_down_2  | joy2[2],
+		btn_left_2  | joy2[1],
+		btn_right_2 | joy2[0]
 	},
 	{m_up_2,m_down_2,m_left_2,m_right_2}
 );
@@ -333,7 +333,7 @@ wire hs, vs;
 wire [2:0] r,g;
 wire [1:0] b;
 
-arcade_rotate_fx #(288,224,8) arcade_video
+arcade_video #(288,224,8) arcade_video
 (
 	.*,
 
@@ -345,8 +345,6 @@ arcade_rotate_fx #(288,224,8) arcade_video
 	.VBlank(vblank),
 	.HSync(hs),
 	.VSync(vs),
-
-	.no_rotate(no_rotate | mod_ponp),
 
 	.rotate_ccw(0),
 	.fx(status[5:3])
