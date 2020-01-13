@@ -105,8 +105,8 @@ localparam CONF_STR = {
 	"DIP;",
 	"-;",
 	"R0,Reset;",
-	"J1,Skip,Start 1P,Start 2P,Coin;",
-	"jn,A,Start,Select,R;",
+	"J1,Fire,Start 1P,Start 2P,Coin,Cheat;",
+	"jn,A,Start,Select,R,L;",
 	"V,v",`BUILD_DATE
 };
 
@@ -257,7 +257,8 @@ always @(posedge clk_sys) begin
 			'h005: btn_start_1     <= pressed; // F1
 			'h006: btn_start_2     <= pressed; // F2
 			'h004: btn_coin        <= pressed; // F3
-			
+			'h00C: btn_cheat       <= pressed; // F4
+
 			// JPAC/IPAC/MAME Style Codes
 			'h016: btn_start_1     <= pressed; // 1
 			'h01E: btn_start_2     <= pressed; // 2
@@ -278,6 +279,7 @@ reg btn_right = 0;
 reg btn_left  = 0;
 reg btn_coin  = 0;
 reg btn_fire  = 0;
+reg btn_cheat = 0;
 
 reg btn_start_1=0;
 reg btn_start_2=0;
@@ -325,7 +327,7 @@ wire m_start    = btn_start_1 | joy1[5] | joy2[5];
 wire m_start_2  = btn_start_2 | joy1[6] | joy2[6];
 wire m_coin     = btn_coin    | joy1[7] | joy2[7] | btn_coin_1 | btn_coin_2;
 
-wire m_cheat    = (mod_orig | mod_plus) & (m_fire | m_fire_2);
+wire m_cheat    = btn_cheat | joy1[8] | joy2[8];
 
 wire hblank, vblank;
 wire ce_vid = ce_6m;
@@ -378,7 +380,7 @@ pacman pacman
 									mod_eeek & m_fire_2,
 									mod_alib & m_fire,
 									m_coin,
-									m_cheat | ((mod_ponp | mod_van | mod_dshop) & m_fire),
+									((mod_orig | mod_plus | mod_ms | mod_bird | mod_alib | mod_woodp) & m_cheat) | ((mod_ponp | mod_van | mod_dshop) & m_fire),
 									m_down,
 									m_right,
 									m_left,
