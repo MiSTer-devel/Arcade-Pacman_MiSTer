@@ -6,6 +6,7 @@
 	<manufacturer>Epos Corporation</manufacturer>
 	<category>Adventure / Horror</category>
 	<category>Platform</category>
+	<setname>eeekkp</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,F3">
 		<dip bits="16,17" name="Lives" ids="6,5,4,3"/>

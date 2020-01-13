@@ -7,6 +7,7 @@
 	<category>Maze / Bugs</category>
 	<category>Platform</category>
 	<category>Platform / Climbing</category>
+	<setname>birdiy</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,E9">
 		<dip bits="16,17" name="Coinage" ids="2c/1cr,1c/1cr,1c/2cr,Free Play" values="3,1,2,0"/>

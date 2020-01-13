@@ -105,8 +105,8 @@ localparam CONF_STR = {
 	"DIP;",
 	"-;",
 	"R0,Reset;",
-	"J1,Skip,Start 1P,Start 2P,Coin;",
-	"jn,A,Start,Select,R;",
+	"J1,Fire,Start 1P,Start 2P,Coin,Cheat;",
+	"jn,A,Start,Select,R,L;",
 	"V,v",`BUILD_DATE
 };
 
@@ -257,7 +257,8 @@ always @(posedge clk_sys) begin
 			'h005: btn_start_1     <= pressed; // F1
 			'h006: btn_start_2     <= pressed; // F2
 			'h004: btn_coin        <= pressed; // F3
-			
+			'h00C: btn_cheat       <= pressed; // F4
+
 			// JPAC/IPAC/MAME Style Codes
 			'h016: btn_start_1     <= pressed; // 1
 			'h01E: btn_start_2     <= pressed; // 2
@@ -278,6 +279,7 @@ reg btn_right = 0;
 reg btn_left  = 0;
 reg btn_coin  = 0;
 reg btn_fire  = 0;
+reg btn_cheat = 0;
 
 reg btn_start_1=0;
 reg btn_start_2=0;
@@ -289,7 +291,7 @@ reg btn_left_2=0;
 reg btn_right_2=0;
 reg btn_fire_2=0;
 
-wire no_rotate = status[2] & ~direct_video & ~mod_ponp;
+wire no_rotate = status[2] | direct_video | mod_ponp;
 
 wire m_up,m_down,m_left,m_right;
 joyonedir jod
@@ -297,10 +299,10 @@ joyonedir jod
 	clk_sys,
 	mod_bird,
 	{
-		no_rotate ? btn_left  | joy1[1] : btn_up    | joy1[3],
-		no_rotate ? btn_right | joy1[0] : btn_down  | joy1[2],
-		no_rotate ? btn_down  | joy1[2] : btn_left  | joy1[1],
-		no_rotate ? btn_up    | joy1[3] : btn_right | joy1[0]
+		btn_up    | joy1[3],
+		btn_down  | joy1[2],
+		btn_left  | joy1[1],
+		btn_right | joy1[0]
 	},
 	{m_up,m_down,m_left,m_right}
 );
@@ -311,10 +313,10 @@ joyonedir jod_2
 	clk_sys,
 	mod_bird,
 	{
-		no_rotate ? btn_left_2  | joy2[1] : btn_up_2    | joy2[3],
-		no_rotate ? btn_right_2 | joy2[0] : btn_down_2  | joy2[2],
-		no_rotate ? btn_down_2  | joy2[2] : btn_left_2  | joy2[1],
-		no_rotate ? btn_up_2    | joy2[3] : btn_right_2 | joy2[0]
+		btn_up_2    | joy2[3],
+		btn_down_2  | joy2[2],
+		btn_left_2  | joy2[1],
+		btn_right_2 | joy2[0]
 	},
 	{m_up_2,m_down_2,m_left_2,m_right_2}
 );
@@ -325,7 +327,7 @@ wire m_start    = btn_start_1 | joy1[5] | joy2[5];
 wire m_start_2  = btn_start_2 | joy1[6] | joy2[6];
 wire m_coin     = btn_coin    | joy1[7] | joy2[7] | btn_coin_1 | btn_coin_2;
 
-wire m_cheat    = (mod_orig | mod_plus) & (m_fire | m_fire_2);
+wire m_cheat    = btn_cheat | joy1[8] | joy2[8];
 
 wire hblank, vblank;
 wire ce_vid = ce_6m;
@@ -333,7 +335,7 @@ wire hs, vs;
 wire [2:0] r,g;
 wire [1:0] b;
 
-arcade_rotate_fx #(288,224,8) arcade_video
+arcade_video #(288,224,8) arcade_video
 (
 	.*,
 
@@ -345,8 +347,6 @@ arcade_rotate_fx #(288,224,8) arcade_video
 	.VBlank(vblank),
 	.HSync(hs),
 	.VSync(vs),
-
-	.no_rotate(no_rotate | mod_ponp),
 
 	.rotate_ccw(0),
 	.fx(status[5:3])
@@ -380,7 +380,7 @@ pacman pacman
 									mod_eeek & m_fire_2,
 									mod_alib & m_fire,
 									m_coin,
-									m_cheat | ((mod_ponp | mod_van | mod_dshop) & m_fire),
+									((mod_orig | mod_plus | mod_ms | mod_bird | mod_alib | mod_woodp) & m_cheat) | ((mod_ponp | mod_van | mod_dshop) & m_fire),
 									m_down,
 									m_right,
 									m_left,

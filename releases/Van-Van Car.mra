@@ -8,6 +8,7 @@
 	<category>Maze</category>
 	<category>Maze / Balloons</category>
 	<category>Racing</category>
+	<setname>vanvan</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,F0,FD">
 		<dip bits="16"    name="Cabinet" ids="Upright,Cocktail"/>

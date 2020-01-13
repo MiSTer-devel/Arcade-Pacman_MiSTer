@@ -391,7 +391,7 @@ vram_l <= (cpu_addr(12) or sync_bus_stb) and not (hcnt(1) and hcnt(0));
 
 iodec_01 <= '1' when cpu_addr(5 downto 1) = "00000" else '0';
 
-p_io_decode_comb : process(sync_bus_r_w_l, sync_bus_stb, ab, cpu_addr, mod_bird, mod_alib, iodec_01)
+p_io_decode_comb : process(sync_bus_r_w_l, sync_bus_stb, ab, cpu_addr, mod_bird, mod_alib, iodec_01, mod_dshop)
 	variable sel  : std_logic_vector(2 downto 0);
 	variable dec  : std_logic_vector(7 downto 0);
 	variable selb : std_logic_vector(1 downto 0);

@@ -6,6 +6,7 @@
 	<manufacturer>Sanritsu</manufacturer>
 	<category>Maze</category>
 	<category>Maze / Blocks</category>
+	<setname>dremshpr</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,F1,FE">
 		<dip bits="16"    name="Cabinet" ids="Cocktail,Upright"/>

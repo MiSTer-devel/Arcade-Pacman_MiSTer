@@ -6,6 +6,7 @@
 	<manufacturer>Sega</manufacturer>
 	<category>Adventure / Arabian</category>
 	<category>Maze</category>
+	<setname>alibaba</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,C9">
 		<dip bits="15"    name="Cabinet" ids="Cocktail,Upright"/>

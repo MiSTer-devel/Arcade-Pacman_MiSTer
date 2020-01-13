@@ -5,6 +5,7 @@
 	<year>1983</year>
 	<manufacturer>Techstar (Telko license)</manufacturer>
 	<category>Maze</category>
+	<setname>mrtnt</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,FB">
 		<dip bits="22"    name="Cabinet" ids="Cocktail,Upright"/>

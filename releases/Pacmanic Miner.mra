@@ -6,6 +6,7 @@
 	<year>2013</year>
 	<manufacturer>Jim Bagley</manufacturer>
 	<category>Platform</category>
+	<setname>pacmmm</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,FF">
 		<dip bits="8"     name="Music" ids="Off,On"/>
