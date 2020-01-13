@@ -5,6 +5,7 @@
 	<year>1982</year>
 	<manufacturer>Techstar (Rock-Ola license)</manufacturer>
 	<category>Maze</category>
+	<setname>eyes</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,FB">
 		<dip bits="22"    name="Cabinet" ids="Cocktail,Upright"/>

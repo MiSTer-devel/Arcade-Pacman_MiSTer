@@ -5,6 +5,7 @@
 	<year>1981</year>
 	<manufacturer>Alpha Denshi Co. / Kural Esco Electric, Ltd.</manufacturer>
 	<category>Maze</category>
+	<setname>crush2</setname>
 	<rbf>pacman</rbf>
 	<switches default="EF,FF,11">
 		<dip bits="4"     name="Cabinet" ids="Upright,Cocktail"/>

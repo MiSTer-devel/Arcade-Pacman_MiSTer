@@ -6,6 +6,7 @@
 	<year>1980</year>
 	<manufacturer>Namco (Midway license)</manufacturer>
 	<category>Maze / Pac-Man</category>
+	<setname>pacman</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,C9">
 		<dip bits="15"    name="Cabinet" ids="Cocktail,Upright"/>

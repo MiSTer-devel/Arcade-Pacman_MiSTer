@@ -6,6 +6,7 @@
 	<year>1984</year>
 	<manufacturer>bootleg (Software Labor)</manufacturer>
 	<category>Platform</category>
+	<setname>sprglbpg</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,F3">
 		<dip bits="15"    name="Cabinet" ids="Cocktail,Upright"/>
