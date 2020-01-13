@@ -5,6 +5,7 @@
 	<year>1982</year>
 	<manufacturer>Sigma Enterprises Inc.</manufacturer>
 	<category>Platform</category>
+	<setname>ponpoko</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,FF,D1">
 		<dip bits="16,17" name="Bonus Life after" ids="Never,10K,30K,50K"/>

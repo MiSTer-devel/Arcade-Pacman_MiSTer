@@ -5,6 +5,7 @@
 	<year>1983</year>
 	<manufacturer>Techstar</manufacturer>
 	<category>Maze</category>
+	<setname>gorkans</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,FB">
 		<dip bits="22"    name="Cabinet" ids="Cocktail,Upright"/>
