@@ -212,6 +212,7 @@ reg mod_ponp = 0;
 reg mod_van  = 0;
 reg mod_pmm  = 0;
 reg mod_dshop= 0;
+reg mod_glob = 0;
 
 wire mod_gm = mod_gork | mod_mrtnt;
 
@@ -234,6 +235,7 @@ always @(posedge clk_sys) begin
 	mod_van  <= (mod == 12);
 	mod_pmm  <= (mod == 13);
 	mod_dshop<= (mod == 14);
+	mod_glob <= (mod == 15);
 end
 
 reg [7:0] sw[8];
@@ -410,6 +412,7 @@ pacman pacman
 	.mod_ponp(mod_ponp | mod_van | mod_dshop),
 	.mod_van(mod_van | mod_dshop),
 	.mod_dshop(mod_dshop),
+	.mod_glob(mod_glob),
 
 	.RESET(RESET | status[0] | buttons[1]),
 	.CLK(clk_sys),

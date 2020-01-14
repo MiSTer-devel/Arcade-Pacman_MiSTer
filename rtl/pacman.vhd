@@ -76,6 +76,7 @@ port
 	mod_ms     : in  std_logic;
 	mod_woodp  : in  std_logic;
 	mod_eeek   : in  std_logic;
+	mod_glob   : in  std_logic;
 	mod_alib   : in  std_logic;
 	mod_ponp   : in  std_logic;
 	mod_van    : in  std_logic;
@@ -568,7 +569,11 @@ eeek_decrypt : process
 begin
 	wait until rising_edge(clk);
 	if watchdog_reset_l = '0' then
-		dcnt <= "01";
+		if mod_eeek = '1' then
+			dcnt <= "01";
+		else
+			dcnt <= "10";
+		end if;
 	else
 		old_rd_l <= cpu_rd_l;
 		if old_rd_l = '1' and cpu_rd_l = '0' and cpu_iorq_l = '0' and cpu_m1_l = '1' then
@@ -587,6 +592,7 @@ port map(
 	MRTNT    => mod_mrtnt,
 	MSPACMAN => mod_ms,
 	EEEK     => mod_eeek,
+	GLOB     => mod_glob,
 	PLUS     => mod_plus,
 	dcnt     => dcnt,
 	cpu_m1_l => cpu_m1_l, 

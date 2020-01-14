@@ -235,6 +235,7 @@ entity rom_descrambler is
 		MSPACMAN : in  std_logic := '0'; -- set to 1 when using Ms Pacman ROMs, 0 otherwise
 		PLUS     : in  std_logic := '0';
 		EEEK     : in  std_logic := '0';
+		GLOB     : in  std_logic := '0';
 
 		dcnt     : in  std_logic_vector(1 downto 0);
 		cpu_m1_l : in  std_logic;
@@ -266,6 +267,7 @@ architecture rtl of rom_descrambler is
 	
 	signal r                : std_logic_vector(7 downto 0);
 	signal r2               : std_logic_vector(7 downto 0);
+	signal r3               : std_logic_vector(7 downto 0);
 	signal mtd_addr         : std_logic_vector(4 downto 0);
 	signal method           : std_logic_vector(3 downto 0);
 begin
@@ -347,7 +349,12 @@ begin
              rom_lo(7) & not rom_lo(6) &     rom_lo(1) & not rom_lo(0) &     rom_lo(3) & not rom_lo(4) & not rom_lo(2) & not rom_lo(5) when dcnt = "10" else
              rom_lo(7) & not rom_lo(1) & not rom_lo(4) & not rom_lo(0) &     rom_lo(3) &     rom_lo(6) & not rom_lo(2) & not rom_lo(5);
 
-	p_decoder_comb : process(clk, rom_addr, addr, rom_data_in, rom_data_out, rom_patched, rom_hi, r, overlay_on, MRTNT, MSPACMAN, EEEK, r2)
+   r3 <= not rom_lo(3) & not rom_lo(7) &     rom_lo(0) & not rom_lo(6) & not rom_lo(4) &     rom_lo(1) & not rom_lo(2) & not rom_lo(5) when dcnt = "00" else
+         not rom_lo(1) & not rom_lo(7) &     rom_lo(0) &     rom_lo(3) & not rom_lo(4) & not rom_lo(6) & not rom_lo(2) & not rom_lo(5) when dcnt = "01" else
+         not rom_lo(3) & not rom_lo(0) & not rom_lo(4) & not rom_lo(6) &     rom_lo(7) &     rom_lo(1) & not rom_lo(2) & not rom_lo(5) when dcnt = "10" else
+         not rom_lo(1) & not rom_lo(0) & not rom_lo(4) &     rom_lo(3) &     rom_lo(7) & not rom_lo(6) & not rom_lo(2) & not rom_lo(5);
+
+	p_decoder_comb : process(clk, rom_addr, addr, rom_data_in, rom_data_out, rom_patched, rom_hi, r, overlay_on, MRTNT, MSPACMAN, EEEK, r2, GLOB, r3)
 		variable patch_addr : std_logic_vector(15 downto 0);
 	begin
 		rom_addr    <= addr;
@@ -362,6 +369,8 @@ begin
 		if rom_addr(15) = '0' then
 			if EEEK = '1' then
 				rom_data_in <= r2;
+			elsif GLOB = '1' then
+				rom_data_in <= r3;
 			else
 				rom_data_in <= r;
 			end if;
