@@ -1,0 +1,38 @@
+<misterromdescription>
+	<name>Jump Shot</name>
+	<mameversion>0216</mameversion>
+	<mratimestamp>201911270000</mratimestamp>
+	<year>1982</year>
+	<manufacturer>Namco (Midway license)</manufacturer>
+	<category>Sport / Basket</category>
+	<rbf>pacman</rbf>
+	<switches default="FF,FF,FB">
+		<dip bits="15"    name="Cabinet" ids="Cocktail,Upright"/>
+		<dip bits="16,17" name="Time" ids="1:00,1:30,2:00,2:30" values="0,2,3,1"/>
+		<dip bits="18"    name="Skin Tone P1" ids="Darker,Lighter"/>
+		<dip bits="19"    name="Skin Tone P2" ids="Darker,Lighter"/>		
+		<dip bits="20"    name="Free Play" ids="Off,On"/>
+		<dip bits="21"    name="2 Players Game" ids="1 Credit,2 Credit"/>
+	</switches>
+	<rom index="1">
+		<part>10</part>
+	</rom> 
+	<rom index="0" zip="jumpshot.zip" md5="" type="merged|nonmerged">
+		<part name="6e"/>
+		<part name="6f"/>
+		<part name="6h"/>
+		<part name="6j"/>
+		<part name="6e"/>
+		<part name="6f"/>
+		<part name="6h"/>
+		<part name="6j"/>
+		<part name="5e"/>
+		<part name="5f"/>
+		<part name="5e"/>
+		<part name="5f"/>
+		<part name="82s126.1m"/>
+		<part name="prom.4a"/>
+		<part name="82s126.3m"/>
+		<part name="prom.7f"/>
+	</rom>
+</misterromdescription>
