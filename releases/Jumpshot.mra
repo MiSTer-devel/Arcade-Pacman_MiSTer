@@ -5,6 +5,7 @@
 	<year>1982</year>
 	<manufacturer>Namco (Midway license)</manufacturer>
 	<category>Sport / Basket</category>
+	<setname>jumpshot</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,FB">
 		<dip bits="15"    name="Cabinet" ids="Cocktail,Upright"/>
@@ -17,7 +18,7 @@
 	<rom index="1">
 		<part>10</part>
 	</rom> 
-	<rom index="0" zip="jumpshot.zip" md5="" type="merged|nonmerged">
+	<rom index="0" zip="jumpshot.zip" md5="0a1ec1cbf481037d3afdc7a27fd3bc9c" type="merged|nonmerged">
 		<part name="6e"/>
 		<part name="6f"/>
 		<part name="6h"/>
