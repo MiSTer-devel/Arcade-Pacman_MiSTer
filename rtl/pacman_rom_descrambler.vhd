@@ -234,6 +234,7 @@ entity rom_descrambler is
 		MRTNT    : in  std_logic := '0'; -- set to 1 when using Mr TNT ROMs, 0 otherwise
 		MSPACMAN : in  std_logic := '0'; -- set to 1 when using Ms Pacman ROMs, 0 otherwise
 		PLUS     : in  std_logic := '0';
+		JMPST    : in  std_logic := '0';
 		EEEK     : in  std_logic := '0';
 		GLOB     : in  std_logic := '0';
 
@@ -263,6 +264,11 @@ architecture rtl of rom_descrambler is
 	signal picktbl: mtd_t := (
 		X"0",X"2",X"4",X"2",X"4",X"0",X"4",X"2",X"2",X"0",X"2",X"2",X"4",X"0",X"4",X"2",
 		X"2",X"2",X"4",X"0",X"4",X"2",X"4",X"0",X"0",X"4",X"0",X"4",X"4",X"2",X"4",X"2"
+	);
+
+	signal picktbl2: mtd_t := (
+		X"0",X"2",X"4",X"4",X"4",X"2",X"0",X"2",X"2",X"0",X"2",X"4",X"4",X"2",X"0",X"2",
+		X"5",X"3",X"5",X"1",X"5",X"3",X"5",X"3",X"1",X"5",X"1",X"5",X"5",X"3",X"5",X"3"
 	);
 	
 	signal r                : std_logic_vector(7 downto 0);
@@ -335,15 +341,25 @@ begin
 	end process;
 
 	mtd_addr <= addr(9) & addr(7) & addr(5) & addr(2) & addr(0);
-	method <= picktbl(to_integer(unsigned(mtd_addr))) xor ("000" & addr(11));
+	method <= picktbl2(to_integer(unsigned(mtd_addr))) xor ("000" & addr(11)) when JMPST = '1' else
+				  picktbl(to_integer(unsigned(mtd_addr))) xor ("000" & addr(11));
 
-	r <= (rom_lo(7)&rom_lo(6)&rom_lo(5)&rom_lo(4)&rom_lo(3)&rom_lo(2)&rom_lo(1)&rom_lo(0)) xor X"00" when method = X"0" or PLUS = '0' else
-		  (rom_lo(7)&rom_lo(6)&rom_lo(5)&rom_lo(4)&rom_lo(3)&rom_lo(2)&rom_lo(1)&rom_lo(0)) xor X"28" when method = X"1" else
-		  (rom_lo(6)&rom_lo(1)&rom_lo(3)&rom_lo(2)&rom_lo(5)&rom_lo(7)&rom_lo(0)&rom_lo(4)) xor X"96" when method = X"2" else
-		  (rom_lo(6)&rom_lo(1)&rom_lo(5)&rom_lo(2)&rom_lo(3)&rom_lo(7)&rom_lo(0)&rom_lo(4)) xor X"be" when method = X"3" else
-		  (rom_lo(0)&rom_lo(3)&rom_lo(7)&rom_lo(6)&rom_lo(4)&rom_lo(2)&rom_lo(1)&rom_lo(5)) xor X"d5" when method = X"4" else
-		  (rom_lo(0)&rom_lo(3)&rom_lo(4)&rom_lo(6)&rom_lo(7)&rom_lo(2)&rom_lo(1)&rom_lo(5)) xor X"dd";
 
+
+	r <= (rom_lo(7)&rom_lo(6)&rom_lo(5)&rom_lo(4)&rom_lo(3)&rom_lo(2)&rom_lo(1)&rom_lo(0)) xor X"28" when method = X"1" and PLUS = '1' else
+		  (rom_lo(6)&rom_lo(1)&rom_lo(3)&rom_lo(2)&rom_lo(5)&rom_lo(7)&rom_lo(0)&rom_lo(4)) xor X"96" when method = X"2" and PLUS = '1' else
+		  (rom_lo(6)&rom_lo(1)&rom_lo(5)&rom_lo(2)&rom_lo(3)&rom_lo(7)&rom_lo(0)&rom_lo(4)) xor X"be" when method = X"3" and PLUS = '1' else
+		  (rom_lo(0)&rom_lo(3)&rom_lo(7)&rom_lo(6)&rom_lo(4)&rom_lo(2)&rom_lo(1)&rom_lo(5)) xor X"d5" when method = X"4" and PLUS = '1' else
+		  (rom_lo(0)&rom_lo(3)&rom_lo(4)&rom_lo(6)&rom_lo(7)&rom_lo(2)&rom_lo(1)&rom_lo(5)) xor X"dd" when method = X"5" and PLUS = '1' else
+
+		  (rom_lo(7)&rom_lo(6)&rom_lo(3)&rom_lo(4)&rom_lo(5)&rom_lo(2)&rom_lo(1)&rom_lo(0)) xor X"20" when method = X"1" and JMPST = '1' else
+		  (rom_lo(5)&rom_lo(0)&rom_lo(4)&rom_lo(3)&rom_lo(7)&rom_lo(1)&rom_lo(2)&rom_lo(6)) xor X"a4" when method = X"2" and JMPST = '1' else
+		  (rom_lo(5)&rom_lo(0)&rom_lo(4)&rom_lo(3)&rom_lo(7)&rom_lo(1)&rom_lo(2)&rom_lo(6)) xor X"8c" when method = X"3" and JMPST = '1' else
+		  (rom_lo(2)&rom_lo(3)&rom_lo(1)&rom_lo(7)&rom_lo(4)&rom_lo(6)&rom_lo(0)&rom_lo(5)) xor X"6e" when method = X"4" and JMPST = '1' else
+		  (rom_lo(2)&rom_lo(3)&rom_lo(4)&rom_lo(7)&rom_lo(1)&rom_lo(6)&rom_lo(0)&rom_lo(5)) xor X"4e" when method = X"5" and JMPST = '1' else
+	  
+		  (rom_lo(7)&rom_lo(6)&rom_lo(5)&rom_lo(4)&rom_lo(3)&rom_lo(2)&rom_lo(1)&rom_lo(0)) xor X"00";
+		  
    r2 <= not rom_lo(7) & not rom_lo(6) &     rom_lo(1) & not rom_lo(3) & not rom_lo(0) & not rom_lo(4) & not rom_lo(2) & not rom_lo(5) when dcnt = "00" else
          not rom_lo(7) & not rom_lo(1) & not rom_lo(4) & not rom_lo(3) & not rom_lo(0) &     rom_lo(6) & not rom_lo(2) & not rom_lo(5) when dcnt = "01" else
              rom_lo(7) & not rom_lo(6) &     rom_lo(1) & not rom_lo(0) &     rom_lo(3) & not rom_lo(4) & not rom_lo(2) & not rom_lo(5) when dcnt = "10" else

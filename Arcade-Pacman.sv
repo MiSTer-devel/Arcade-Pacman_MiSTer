@@ -198,6 +198,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 );
 
 reg mod_plus = 0;
+reg mod_jmpst= 0;
 reg mod_club = 0;
 reg mod_orig = 0;
 //reg mod_crush= 0;
@@ -236,6 +237,7 @@ always @(posedge clk_sys) begin
 	mod_pmm  <= (mod == 13);
 	mod_dshop<= (mod == 14);
 	mod_glob <= (mod == 15);
+	mod_jmpst<= (mod == 16);
 end
 
 reg [7:0] sw[8];
@@ -391,8 +393,8 @@ pacman pacman
 
 	.in1(sw[1] & (in1xor ^ {
 									mod_gm & m_fire_2,
-									m_start_2 | (mod_eeek & m_fire),
-									m_start,
+									m_start_2 | (mod_eeek & m_fire) | (mod_jmpst & m_fire_2),
+									m_start   | (mod_jmpst & m_fire),
 									(mod_gm & m_fire) | ((mod_alib | mod_ponp | mod_van | mod_dshop) & m_fire_2),
 									~mod_pmm & m_down_2,
 									mod_pmm ? m_fire : m_right_2,
@@ -403,6 +405,7 @@ pacman pacman
 	.dipsw2((mod_ponp | mod_van | mod_dshop) ? sw[3] : 8'hFF),
 
 	.mod_plus(mod_plus),
+	.mod_jmpst(mod_jmpst),
 	.mod_bird(mod_bird),
 	.mod_ms(mod_ms),
 	.mod_mrtnt(mod_mrtnt),

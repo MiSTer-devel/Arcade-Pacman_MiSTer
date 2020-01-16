@@ -71,6 +71,7 @@ port
 	dipsw2     : in  std_logic_vector(7 downto 0);
 	--
 	mod_plus   : in  std_logic;
+	mod_jmpst  : in  std_logic;
 	mod_bird   : in  std_logic;
 	mod_mrtnt  : in  std_logic;
 	mod_ms     : in  std_logic;
@@ -81,6 +82,7 @@ port
 	mod_ponp   : in  std_logic;
 	mod_van    : in  std_logic;
 	mod_dshop  : in  std_logic;
+
 	--
 	dn_addr    : in  std_logic_vector(15 downto 0);
 	dn_data    : in  std_logic_vector(7 downto 0);
@@ -594,6 +596,7 @@ port map(
 	EEEK     => mod_eeek,
 	GLOB     => mod_glob,
 	PLUS     => mod_plus,
+	JMPST		=> mod_jmpst,
 	dcnt     => dcnt,
 	cpu_m1_l => cpu_m1_l, 
 	addr     => cpu_addr,
