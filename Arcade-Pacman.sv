@@ -165,8 +165,8 @@ wire  [7:0] ioctl_dout;
 
 wire [10:0] ps2_key;
 
-wire [15:0] joy1 = mod_club ? joy1a : (joy1a | joy2a);
-wire [15:0] joy2 = mod_club ? joy2a : (joy1a | joy2a);
+wire [15:0] joy1 = (mod_club | mod_jmpst) ? joy1a : (joy1a | joy2a);
+wire [15:0] joy2 = (mod_club | mod_jmpst) ? joy2a : (joy1a | joy2a);
 wire [15:0] joy1a;
 wire [15:0] joy2a;
 
@@ -416,6 +416,7 @@ pacman pacman
 	.mod_van(mod_van | mod_dshop),
 	.mod_dshop(mod_dshop),
 	.mod_glob(mod_glob),
+	.mod_club(mod_club),
 
 	.RESET(RESET | status[0] | buttons[1]),
 	.CLK(clk_sys),

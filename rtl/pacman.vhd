@@ -82,6 +82,7 @@ port
 	mod_ponp   : in  std_logic;
 	mod_van    : in  std_logic;
 	mod_dshop  : in  std_logic;
+	mod_club   : in  std_logic;
 
 	--
 	dn_addr    : in  std_logic_vector(15 downto 0);
@@ -520,7 +521,7 @@ begin
 end process;
   
 
-inj <= in0(3 downto 0) when control_reg(5 downto 4) = "01" else
+inj <= in0(3 downto 0) when control_reg(5 downto 4) = "01" or mod_club = '0' else
        in1(3 downto 0) when control_reg(5 downto 4) = "10" else
        in0(3 downto 0) and in1(3 downto 0);
 
