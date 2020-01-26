@@ -1,0 +1,43 @@
+<misterromdescription>
+	<name>Woodpecker (set 1)</name>
+	<mameversion>0216</mameversion>
+	<setname>woodpeck</setname>
+	<mratimestamp>201911270000</mratimestamp>
+	<year>1981</year>
+	<manufacturer>Amenip (Palcom Queen River)</manufacturer>
+	<category>Maze / Cat & Mouse</category>
+	<category>Platform</category>
+	<setname>woodpeck</setname>
+	<rbf>pacman</rbf>
+	<switches default="FF,FF,D9">
+		<dip bits="22"    name="Cabinet" ids="Cocktail,Upright"/>
+		<dip bits="16,17" name="Coinage" ids="2c/1cr,1c/1cr,1c/2cr,Free Play" values="3,1,2,0"/>
+		<dip bits="18,19" name="Lives" ids="1,2,3,4"/>
+		<dip bits="20,21" name="Bonus Life after" ids="5K,10K,15K,Never"/>
+	</switches>
+	<rom index="1">
+		<part>08</part>
+	</rom>  
+	<rom index="0" zip="woodpeck.zip" md5="00ede6f2234733c7f0d471c7c6edc15f" type="merged|nonmerged">
+		<part name="f.bin"/>
+		<part name="f.bin"/>
+		<part name="f.bin"/>
+		<part name="f.bin"/>
+		<part name="i.bin"/>
+		<part name="e.bin"/>
+		<part name="g.bin"/>
+		<part name="h.bin"/>
+		<part name="a.5e"/>
+		<part name="c.5h"/>
+		<part name="b.5f"/>
+		<part name="d.5j"/>
+		<part name="a.5e"/>
+		<part name="c.5h"/>
+		<part name="b.5f"/>
+		<part name="d.5j"/>
+		<part name="pr.1k"/>
+		<part name="pr.4a"/>
+		<part name="pr.3k"/>
+		<part name="pr.8h"/>
+	</rom>
+</misterromdescription>

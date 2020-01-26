@@ -1,0 +1,37 @@
+<misterromdescription>
+	<name>Eyes (US set 1)</name>
+	<mameversion>0216</mameversion>
+	<mratimestamp>201911270000</mratimestamp>
+	<year>1982</year>
+	<manufacturer>Techstar (Rock-Ola license)</manufacturer>
+	<category>Maze</category>
+	<setname>eyes</setname>
+	<rbf>pacman</rbf>
+	<switches default="FF,FF,FB">
+		<dip bits="22"    name="Cabinet" ids="Cocktail,Upright"/>
+		<dip bits="16,17" name="Coinage" ids="2c/1cr,1c/1cr,1c/2cr,Free Play" values="1,3,2,0"/>
+		<dip bits="18,19" name="Lives" ids="5,4,3,2"/>
+		<dip bits="20,21" name="Bonus Life after" ids="125K,100K,75K,50K"/>
+	</switches>
+	<rom index="1">
+		<part>07</part>
+	</rom>  
+	<rom index="0" zip="eyes.zip" md5="6a14c3752f33a144760b4fe8f45ed5f7" type="merged|nonmerged">
+		<part name="d7"/>
+		<part name="e7"/>
+		<part name="f7"/>
+		<part name="h7"/>
+		<part name="d7"/>
+		<part name="e7"/>
+		<part name="f7"/>
+		<part name="h7"/>
+		<part name="d5"/>
+		<part name="e5"/>
+		<part name="e5"/>
+		<part name="e5"/>
+		<part name="82s126.1m"/>
+		<part name="82s129.4a"/>
+		<part name="82s126.3m"/>
+		<part name="82s123.7f"/>
+	</rom>
+</misterromdescription>
