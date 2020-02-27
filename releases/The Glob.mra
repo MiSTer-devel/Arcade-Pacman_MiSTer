@@ -14,7 +14,7 @@
 		<dip bits="18,20" name="Difficulty" ids="Hardest,Very Hard,Very Difficult,Difficult,Normal,Easy,Very Easy,Easiest"/>
 		<dip bits="21"    name="Demo Sounds" ids="On,Off"/>
 	</switches>
-	<rom index="0" zip="suprglob.zip" md5="253bb5b2c5815eacae8192047cbcf984" type="merged">
+	<rom index="0" zip="suprglob.zip|theglobp.zip" md5="253bb5b2c5815eacae8192047cbcf984" type="merged|nonmerged">
 		<part name="u_2_the_glob_pg02284_eagle.u2" crc="829d0bea"/>
 		<part name="u_3_the_glob_pg02284_eagle.u3" crc="31de6628"/>
 		<part name="u_2_the_glob_pg02284_eagle.u2" crc="829d0bea"/>
