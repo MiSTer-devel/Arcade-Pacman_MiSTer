@@ -14,7 +14,7 @@
 		<dip bits="18,20" name="Difficulty" ids="Hardest,Very Hard,Very Difficult,Difficult,Normal,Easy,Very Easy,Easiest"/>
 		<dip bits="21"    name="Demo Sounds" ids="On,Off"/>
 	</switches>
-	<rom index="0" zip="suprglob.zip" md5="3169e442c32c3d743e0e30f4288e91e5" type="merged">
+	<rom index="0" zip="suprglob.zip|beastfp.zip" md5="3169e442c32c3d743e0e30f4288e91e5" type="merged|nonmerged">
 		<part name="bf-u2.bin" crc="3afc517b"/>
 		<part name="bf-u3.bin" crc="8dbd76d0"/>
 		<part name="bf-u2.bin" crc="3afc517b"/>
