@@ -71,15 +71,19 @@ port
 	dipsw2     : in  std_logic_vector(7 downto 0);
 	--
 	mod_plus   : in  std_logic;
+	mod_jmpst  : in  std_logic;
 	mod_bird   : in  std_logic;
 	mod_mrtnt  : in  std_logic;
 	mod_ms     : in  std_logic;
 	mod_woodp  : in  std_logic;
 	mod_eeek   : in  std_logic;
+	mod_glob   : in  std_logic;
 	mod_alib   : in  std_logic;
 	mod_ponp   : in  std_logic;
 	mod_van    : in  std_logic;
 	mod_dshop  : in  std_logic;
+	mod_club   : in  std_logic;
+
 	--
 	dn_addr    : in  std_logic_vector(15 downto 0);
 	dn_data    : in  std_logic_vector(7 downto 0);
@@ -517,7 +521,7 @@ begin
 end process;
   
 
-inj <= in0(3 downto 0) when control_reg(5 downto 4) = "01" else
+inj <= in0(3 downto 0) when control_reg(5 downto 4) = "01" or mod_club = '0' else
        in1(3 downto 0) when control_reg(5 downto 4) = "10" else
        in0(3 downto 0) and in1(3 downto 0);
 
@@ -568,7 +572,11 @@ eeek_decrypt : process
 begin
 	wait until rising_edge(clk);
 	if watchdog_reset_l = '0' then
-		dcnt <= "01";
+		if mod_eeek = '1' then
+			dcnt <= "01";
+		else
+			dcnt <= "10";
+		end if;
 	else
 		old_rd_l <= cpu_rd_l;
 		if old_rd_l = '1' and cpu_rd_l = '0' and cpu_iorq_l = '0' and cpu_m1_l = '1' then
@@ -587,7 +595,9 @@ port map(
 	MRTNT    => mod_mrtnt,
 	MSPACMAN => mod_ms,
 	EEEK     => mod_eeek,
+	GLOB     => mod_glob,
 	PLUS     => mod_plus,
+	JMPST		=> mod_jmpst,
 	dcnt     => dcnt,
 	cpu_m1_l => cpu_m1_l, 
 	addr     => cpu_addr,

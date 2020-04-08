@@ -165,8 +165,8 @@ wire  [7:0] ioctl_dout;
 
 wire [10:0] ps2_key;
 
-wire [15:0] joy1 = mod_club ? joy1a : (joy1a | joy2a);
-wire [15:0] joy2 = mod_club ? joy2a : (joy1a | joy2a);
+wire [15:0] joy1 = (mod_club | mod_jmpst) ? joy1a : (joy1a | joy2a);
+wire [15:0] joy2 = (mod_club | mod_jmpst) ? joy2a : (joy1a | joy2a);
 wire [15:0] joy1a;
 wire [15:0] joy2a;
 
@@ -198,6 +198,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 );
 
 reg mod_plus = 0;
+reg mod_jmpst= 0;
 reg mod_club = 0;
 reg mod_orig = 0;
 //reg mod_crush= 0;
@@ -212,6 +213,7 @@ reg mod_ponp = 0;
 reg mod_van  = 0;
 reg mod_pmm  = 0;
 reg mod_dshop= 0;
+reg mod_glob = 0;
 
 wire mod_gm = mod_gork | mod_mrtnt;
 
@@ -234,6 +236,8 @@ always @(posedge clk_sys) begin
 	mod_van  <= (mod == 12);
 	mod_pmm  <= (mod == 13);
 	mod_dshop<= (mod == 14);
+	mod_glob <= (mod == 15);
+	mod_jmpst<= (mod == 16);
 end
 
 reg [7:0] sw[8];
@@ -389,8 +393,8 @@ pacman pacman
 
 	.in1(sw[1] & (in1xor ^ {
 									mod_gm & m_fire_2,
-									m_start_2 | (mod_eeek & m_fire),
-									m_start,
+									m_start_2 | (mod_eeek & m_fire) | (mod_jmpst & m_fire_2),
+									m_start   | (mod_jmpst & m_fire),
 									(mod_gm & m_fire) | ((mod_alib | mod_ponp | mod_van | mod_dshop) & m_fire_2),
 									~mod_pmm & m_down_2,
 									mod_pmm ? m_fire : m_right_2,
@@ -401,6 +405,7 @@ pacman pacman
 	.dipsw2((mod_ponp | mod_van | mod_dshop) ? sw[3] : 8'hFF),
 
 	.mod_plus(mod_plus),
+	.mod_jmpst(mod_jmpst),
 	.mod_bird(mod_bird),
 	.mod_ms(mod_ms),
 	.mod_mrtnt(mod_mrtnt),
@@ -410,6 +415,8 @@ pacman pacman
 	.mod_ponp(mod_ponp | mod_van | mod_dshop),
 	.mod_van(mod_van | mod_dshop),
 	.mod_dshop(mod_dshop),
+	.mod_glob(mod_glob),
+	.mod_club(mod_club),
 
 	.RESET(RESET | status[0] | buttons[1]),
 	.CLK(clk_sys),
