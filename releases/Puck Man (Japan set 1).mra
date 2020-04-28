@@ -1,12 +1,11 @@
 <misterromdescription>
 	<name>Puck Man (Japan set 1)</name>
-	<mameversion>0216</mameversion>
+	<mameversion>0220</mameversion>
 	<setname>puckman</setname>
-	<mratimestamp>201912310000</mratimestamp>
+	<mratimestamp>20200428195824</mratimestamp>
 	<year>1980</year>
 	<manufacturer>Namco</manufacturer>
 	<category>Maze / Pac-Man</category>
-	<setname>puckman</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,C9">
 		<dip bits="15"    name="Cabinet" ids="Cocktail,Upright"/>
@@ -14,38 +13,38 @@
 		<dip bits="18,19" name="Lives" ids="1,2,3,5"/>
 		<dip bits="20,21" name="Bonus Life After" ids="10000,15000,20000,None"/>
 		<dip bits="22"    name="Difficulty" ids="Hard,Normal"/>
-		<dip bits="23"    name="Ghost Names" ids="Alternative,Normal"/>
+		<dip bits="23"    name="Ghost Names" ids="Alternative,Normal"/>		
 	</switches>
-	<rom index="0" zip="puckman.zip" md5="adc97acb1e98b20fa6e6753e6411e0cb" type="merged|nonmerged|split">
-		<part name="pm1_prg1.6e"/>
-		<part name="pm1_prg2.6k"/>
-		<part name="pm1_prg3.6f"/>
-		<part name="pm1_prg4.6m"/>
-		<part name="pm1_prg5.6h"/>
-		<part name="pm1_prg6.6n"/>
-		<part name="pm1_prg7.6j"/>
-		<part name="pm1_prg8.6p"/>
-		<part name="pm1_prg1.6e"/>
-		<part name="pm1_prg2.6k"/>
-		<part name="pm1_prg3.6f"/>
-		<part name="pm1_prg4.6m"/>
-		<part name="pm1_prg5.6h"/>
-		<part name="pm1_prg6.6n"/>
-		<part name="pm1_prg7.6j"/>
-		<part name="pm1_prg8.6p"/>
-		<part name="pm1_chg1.5e"/>
-		<part name="pm1_chg2.5h"/>
-		<part name="pm1_chg3.5f"/>
-		<part name="pm1_chg4.5j"/>
-		<part name="pm1_chg3.5f"/>
-		<part name="pm1_chg4.5j"/>
-		<part name="pm1_chg3.5f"/>
-		<part name="pm1_chg4.5j"/>
-		<part name="pm1_chg3.5f"/>
-		<part name="pm1_chg4.5j"/>
-		<part name="pm1-3.1m"/>
-		<part name="pm1-4.4a"/>
-		<part name="pm1-2.3m"/>
-		<part name="pm1-1.7f"/>
+	<rom index="0" zip="puckman.zip" md5="adc97acb1e98b20fa6e6753e6411e0cb">
+		<part crc="f36e88ab" name="pm1_prg1.6e"/>
+		<part crc="618bd9b3" name="pm1_prg2.6k"/>
+		<part crc="7d177853" name="pm1_prg3.6f"/>
+		<part crc="d3e8914c" name="pm1_prg4.6m"/>
+		<part crc="6bf4f625" name="pm1_prg5.6h"/>
+		<part crc="a948ce83" name="pm1_prg6.6n"/>
+		<part crc="b6289b26" name="pm1_prg7.6j"/>
+		<part crc="17a88c13" name="pm1_prg8.6p"/>
+		<part crc="f36e88ab" name="pm1_prg1.6e"/>
+		<part crc="618bd9b3" name="pm1_prg2.6k"/>
+		<part crc="7d177853" name="pm1_prg3.6f"/>
+		<part crc="d3e8914c" name="pm1_prg4.6m"/>
+		<part crc="6bf4f625" name="pm1_prg5.6h"/>
+		<part crc="a948ce83" name="pm1_prg6.6n"/>
+		<part crc="b6289b26" name="pm1_prg7.6j"/>
+		<part crc="17a88c13" name="pm1_prg8.6p"/>
+		<part crc="2066a0b7" name="pm1_chg1.5e"/>
+		<part crc="3591b89d" name="pm1_chg2.5h"/>
+		<part crc="9e39323a" name="pm1_chg3.5f"/>
+		<part crc="1b1d9096" name="pm1_chg4.5j"/>
+		<part crc="9e39323a" name="pm1_chg3.5f"/>
+		<part crc="1b1d9096" name="pm1_chg4.5j"/>
+		<part crc="9e39323a" name="pm1_chg3.5f"/>
+		<part crc="1b1d9096" name="pm1_chg4.5j"/>
+		<part crc="9e39323a" name="pm1_chg3.5f"/>
+		<part crc="1b1d9096" name="pm1_chg4.5j"/>
+		<part crc="a9cc86bf" name="pm1-3.1m"/>
+		<part crc="3eb3a8e4" name="pm1-4.4a"/>
+		<part crc="77245b66" name="pm1-2.3m"/>
+		<part crc="2fc650bd" name="pm1-1.7f"/>
 	</rom>
 </misterromdescription>

@@ -1,11 +1,11 @@
 <misterromdescription>
 	<name>Jump Shot</name>
-	<mameversion>0216</mameversion>
-	<mratimestamp>201911270000</mratimestamp>
-	<year>1982</year>
-	<manufacturer>Namco (Midway license)</manufacturer>
-	<category>Sport / Basket</category>
+	<mameversion>0220</mameversion>
 	<setname>jumpshot</setname>
+	<mratimestamp>20200427161917</mratimestamp>
+	<year>1985</year>
+	<manufacturer>Bally Midway</manufacturer>
+	<category>Sports / Basketball</category>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,FB">
 		<dip bits="15"    name="Cabinet" ids="Cocktail,Upright"/>
@@ -17,23 +17,23 @@
 	</switches>
 	<rom index="1">
 		<part>10</part>
-	</rom> 
-	<rom index="0" zip="jumpshot.zip" md5="0a1ec1cbf481037d3afdc7a27fd3bc9c" type="merged|nonmerged">
-		<part name="6e"/>
-		<part name="6f"/>
-		<part name="6h"/>
-		<part name="6j"/>
-		<part name="6e"/>
-		<part name="6f"/>
-		<part name="6h"/>
-		<part name="6j"/>
-		<part name="5e"/>
-		<part name="5f"/>
-		<part name="5e"/>
-		<part name="5f"/>
-		<part name="82s126.1m"/>
-		<part name="prom.4a"/>
-		<part name="82s126.3m"/>
-		<part name="prom.7f"/>
+	</rom>
+	<rom index="0" zip="jumpshot.zip" md5="0a1ec1cbf481037d3afdc7a27fd3bc9c">
+		<part crc="f00def9a" name="6e"/>
+		<part crc="f70deae2" name="6f"/>
+		<part crc="894d6f68" name="6h"/>
+		<part crc="f15a108a" name="6j"/>
+		<part crc="f00def9a" name="6e"/>
+		<part crc="f70deae2" name="6f"/>
+		<part crc="894d6f68" name="6h"/>
+		<part crc="f15a108a" name="6j"/>
+		<part crc="d9fa90f5" name="5e"/>
+		<part crc="2ec711c1" name="5f"/>
+		<part crc="d9fa90f5" name="5e"/>
+		<part crc="2ec711c1" name="5f"/>
+		<part crc="a9cc86bf" name="82s126.1m"/>
+		<part crc="0399f39f" name="prom.4a"/>
+		<part crc="77245b66" name="82s126.3m"/>
+		<part crc="872b42f3" name="prom.7f"/>
 	</rom>
 </misterromdescription>

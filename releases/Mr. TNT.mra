@@ -1,11 +1,11 @@
 <misterromdescription>
 	<name>Mr. TNT</name>
-	<mameversion>0216</mameversion>
-	<mratimestamp>201911270000</mratimestamp>
+	<mameversion>0220</mameversion>
+	<setname>mrtnt</setname>
+	<mratimestamp>20200427161917</mratimestamp>
 	<year>1983</year>
 	<manufacturer>Techstar (Telko license)</manufacturer>
 	<category>Maze</category>
-	<setname>mrtnt</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,FB">
 		<dip bits="22"    name="Cabinet" ids="Cocktail,Upright"/>
@@ -15,23 +15,23 @@
 	</switches>
 	<rom index="1">
 		<part>07</part>
-	</rom>  
-	<rom index="0" zip="mrtnt.zip" md5="c8747e9ebe04bc429e09476bd33da625" type="merged|nonmerged">
-		<part name="tnt.1"/>
-		<part name="tnt.2"/>
-		<part name="tnt.3"/>
-		<part name="tnt.4"/>
-		<part name="tnt.1"/>
-		<part name="tnt.2"/>
-		<part name="tnt.3"/>
-		<part name="tnt.4"/>
-		<part name="tnt.5"/>
-		<part name="tnt.6"/>
-		<part name="tnt.6"/>
-		<part name="tnt.6"/>
-		<part name="82s126.1m"/>
-		<part name="82s126.4a"/>
-		<part name="82s126.3m"/>
-		<part name="82s123.7f"/>
+	</rom>
+	<rom index="0" zip="mrtnt.zip" md5="c8747e9ebe04bc429e09476bd33da625">
+		<part crc="0e836586" name="tnt.1"/>
+		<part crc="779c4c5b" name="tnt.2"/>
+		<part crc="ad6fc688" name="tnt.3"/>
+		<part crc="d77557b3" name="tnt.4"/>
+		<part crc="0e836586" name="tnt.1"/>
+		<part crc="779c4c5b" name="tnt.2"/>
+		<part crc="ad6fc688" name="tnt.3"/>
+		<part crc="d77557b3" name="tnt.4"/>
+		<part crc="3038cc0e" name="tnt.5"/>
+		<part crc="97634d8b" name="tnt.6"/>
+		<part crc="97634d8b" name="tnt.6"/>
+		<part crc="97634d8b" name="tnt.6"/>
+		<part crc="a9cc86bf" name="82s126.1m"/>
+		<part crc="3eb3a8e4" name="82s126.4a"/>
+		<part crc="77245b66" name="82s126.3m"/>
+		<part crc="2fc650bd" name="82s123.7f"/>
 	</rom>
 </misterromdescription>

@@ -1,5 +1,11 @@
 <misterromdescription>
+	<name>Ms. Pac-Man</name>
+	<mameversion>0220</mameversion>
 	<setname>mspacman</setname>
+	<mratimestamp>20200427161917</mratimestamp>
+	<year>1981</year>
+	<manufacturer>Midway / General Computer Corporation</manufacturer>
+	<category>Maze / Pac-Man</category>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,C9">
 		<dip bits="15"    name="Cabinet" ids="Cocktail,Upright"/>
@@ -10,24 +16,24 @@
 	</switches>
 	<rom index="1">
 		<part>05</part>
-	</rom> 
+	</rom>
 	<rom index="0" zip="mspacman.zip" md5="6c75da1e5c32807fdff6eeb9f5a75ae3">
-		<part name="pacman.6e"/>
-		<part name="pacman.6f"/>
-		<part name="pacman.6h"/>
-		<part name="pacman.6j"/>
-		<part name="u5"/>
-		<part name="u5"/>
-		<part name="u6"/>
-		<part name="u7"/>
-		<part name="u7"/>
-		<part name="5e"/>
-		<part name="5f"/>
-		<part name="5f"/>
-		<part name="5f"/>
-		<part name="82s126.1m"/>
-		<part name="82s126.4a"/>
-		<part name="82s126.3m"/>
-		<part name="82s123.7f"/>
+		<part crc="c1e6ab10" name="pacman.6e"/>
+		<part crc="1a6fb2d4" name="pacman.6f"/>
+		<part crc="bcdd1beb" name="pacman.6h"/>
+		<part crc="817d94e3" name="pacman.6j"/>
+		<part crc="f45fbbcd" name="u5"/>
+		<part crc="f45fbbcd" name="u5"/>
+		<part crc="a90e7000" name="u6"/>
+		<part crc="c82cd714" name="u7"/>
+		<part crc="c82cd714" name="u7"/>
+		<part crc="5c281d01" name="5e"/>
+		<part crc="615af909" name="5f"/>
+		<part crc="615af909" name="5f"/>
+		<part crc="615af909" name="5f"/>
+		<part crc="a9cc86bf" name="82s126.1m"/>
+		<part crc="3eb3a8e4" name="82s126.4a"/>
+		<part crc="77245b66" name="82s126.3m"/>
+		<part crc="2fc650bd" name="82s123.7f"/>
 	</rom>
 </misterromdescription>

@@ -1,13 +1,13 @@
 <misterromdescription>
 	<name>Birdiy</name>
-	<mameversion>0216</mameversion>
-	<mratimestamp>201911270000</mratimestamp>
+	<mameversion>0220</mameversion>
+	<setname>birdiy</setname>
+	<mratimestamp>20200427161917</mratimestamp>
 	<year>1983</year>
 	<manufacturer>Mama Top</manufacturer>
 	<category>Maze / Bugs</category>
 	<category>Platform</category>
 	<category>Platform / Climbing</category>
-	<setname>birdiy</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,E9">
 		<dip bits="16,17" name="Coinage" ids="2c/1cr,1c/1cr,1c/2cr,Free Play" values="3,1,2,0"/>
@@ -15,23 +15,23 @@
 	</switches>
 	<rom index="1">
 		<part>04</part>
-	</rom> 
-	<rom index="0" zip="birdiy.zip" md5="8c4a16c4a9aca0e10a83fd3fbcbf89c3" type="merged|nonmerged">
-		<part name="a6.6a"/>
-		<part name="c6.6c"/>
-		<part name="a4.4a"/>
-		<part name="c4.4c"/>
-		<part name="a6.6a"/>
-		<part name="c6.6c"/>
-		<part name="a4.4a"/>
-		<part name="c4.4c"/>
-		<part name="c1.1c"/>
-		<part name="c3.3c"/>
-		<part name="c1.1c"/>
-		<part name="c3.3c"/>
-		<part name="n82s129n.4k"/>
-		<part name="n82s129n.9m"/>
-		<part name="n82s129n.6l"/>
-		<part name="n82s123n.10n"/>
+	</rom>
+	<rom index="0" zip="birdiy.zip" md5="8c4a16c4a9aca0e10a83fd3fbcbf89c3">
+		<part crc="3a58f8ad" name="a6.6a"/>
+		<part crc="fec61ea2" name="c6.6c"/>
+		<part crc="3392783b" name="a4.4a"/>
+		<part crc="2391d83d" name="c4.4c"/>
+		<part crc="3a58f8ad" name="a6.6a"/>
+		<part crc="fec61ea2" name="c6.6c"/>
+		<part crc="3392783b" name="a4.4a"/>
+		<part crc="2391d83d" name="c4.4c"/>
+		<part crc="8f6bf54f" name="c1.1c"/>
+		<part crc="10b55440" name="c3.3c"/>
+		<part crc="8f6bf54f" name="c1.1c"/>
+		<part crc="10b55440" name="c3.3c"/>
+		<part crc="a9cc86bf" name="n82s129n.4k"/>
+		<part crc="63efb927" name="n82s129n.9m"/>
+		<part crc="77245b66" name="n82s129n.6l"/>
+		<part crc="ff344446" name="n82s123n.10n"/>
 	</rom>
 </misterromdescription>

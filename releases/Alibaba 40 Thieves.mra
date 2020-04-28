@@ -1,12 +1,12 @@
 <misterromdescription>
 	<name>Ali Baba and 40 Thieves</name>
-	<mameversion>0216</mameversion>
-	<mratimestamp>201911270000</mratimestamp>
+	<mameversion>0220</mameversion>
+	<setname>alibaba</setname>
+	<mratimestamp>20200427185750</mratimestamp>
 	<year>1982</year>
 	<manufacturer>Sega</manufacturer>
 	<category>Adventure / Arabian</category>
 	<category>Maze</category>
-	<setname>alibaba</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,C9">
 		<dip bits="15"    name="Cabinet" ids="Cocktail,Upright"/>
@@ -17,29 +17,29 @@
 	</switches>
 	<rom index="1">
 		<part>0A</part>
-	</rom>  
-	<rom index="0" zip="alibaba.zip" md5="ac9f54abb0b408a9481235d239888099" type="merged|nonmerged">
-		<part name="6e"/>
-		<part name="6f"/>
-		<part name="6h"/>
-		<part name="6k"/>
-		<part name="6l"/>
-		<part name="6l"/>
-		<part name="6m"/>
-		<part name="6m"/>
-		<part name="6m"/>
-		<part name="6m"/>
-		<part name="5e"/>
-		<part name="5h"/>
-		<part name="5f"/>
-		<part name="5k"/>
-		<part name="5e"/>
-		<part name="5h"/>
-		<part name="5f"/>
-		<part name="5k"/>
-		<part name="82s126.1m"/>
-		<part name="82s129.a4"/>
-		<part name="82s126.3m"/>
-		<part name="82s123.e7"/>
+	</rom>
+	<rom index="0" zip="alibaba.zip" md5="ac9f54abb0b408a9481235d239888099">
+		<part crc="38d701aa" name="6e"/>
+		<part crc="3d0e35f3" name="6f"/>
+		<part crc="823bee89" name="6h"/>
+		<part crc="474d032f" name="6k"/>
+		<part crc="5ab315c1" name="6l"/>
+		<part crc="5ab315c1" name="6l"/>
+		<part crc="438d0357" name="6m"/>
+		<part crc="438d0357" name="6m"/>
+		<part crc="438d0357" name="6m"/>
+		<part crc="438d0357" name="6m"/>
+		<part crc="85bcb8f8" name="5e"/>
+		<part crc="38e50862" name="5h"/>
+		<part crc="b5715c86" name="5f"/>
+		<part crc="713086b3" name="5k"/>
+		<part crc="85bcb8f8" name="5e"/>
+		<part crc="38e50862" name="5h"/>
+		<part crc="b5715c86" name="5f"/>
+		<part crc="713086b3" name="5k"/>
+		<part crc="a9cc86bf" name="82s126.1m"/>
+		<part crc="3eb3a8e4" name="82s129.a4"/>
+		<part crc="77245b66" name="82s126.3m"/>
+		<part crc="2fc650bd" name="82s123.e7"/>
 	</rom>
 </misterromdescription>
