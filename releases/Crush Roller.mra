@@ -1,11 +1,11 @@
 <misterromdescription>
 	<name>Crush Roller (set 2)</name>
-	<mameversion>0216</mameversion>
-	<mratimestamp>201911270000</mratimestamp>
+	<mameversion>0220</mameversion>
+	<setname>crush2</setname>
+	<mratimestamp>20200427161917</mratimestamp>
 	<year>1981</year>
 	<manufacturer>Alpha Denshi Co. / Kural Esco Electric, Ltd.</manufacturer>
 	<category>Maze</category>
-	<setname>crush2</setname>
 	<rbf>pacman</rbf>
 	<switches default="EF,FF,11">
 		<dip bits="4"     name="Cabinet" ids="Upright,Cocktail"/>
@@ -13,68 +13,38 @@
 		<dip bits="18,19" name="Lives" ids="3,4,5,6"/>
 		<dip bits="20"    name="First Pattern" ids="Hard,Easy"/>
 		<dip bits="21"    name="Teleport Holes" ids="On,Off"/>
-	</switches> 
+	</switches>
 	<rom index="1">
 		<part>03</part>
-	</rom> 
-	<rom index="0" zip="crush2.zip" md5="f8b85c0ec812b2a9d8ff7d78d2f7db25" type="nonmerged">
-		<part name="tp1"/>
-		<part name="tp5a"/>
-		<part name="tp2"/>
-		<part name="tp6"/>
-		<part name="tp3"/>
-		<part name="tp7"/>
-		<part name="tp4"/>
-		<part name="tp8"/>
-		<part name="tp1"/>
-		<part name="tp5a"/>
-		<part name="tp2"/>
-		<part name="tp6"/>
-		<part name="tp3"/>
-		<part name="tp7"/>
-		<part name="tp4"/>
-		<part name="tp8"/>
-		<part name="tpa"/>
-		<part name="tpc"/>
-		<part name="tpb"/>
-		<part name="tpd"/>
-		<part name="tpd"/>
-		<part name="tpd"/>
-		<part name="tpd"/>
-		<part name="tpd"/>
-		<part name="82s126.1m"/>
-		<part name="2s140.4a"/>
-		<part name="82s126.3m"/>
-		<part name="82s123.7f"/>
 	</rom>
-	<rom index="0" zip="crush.zip" md5="f8b85c0ec812b2a9d8ff7d78d2f7db25" type="merged">
-		<part name="crush2/tp1"/>
-		<part name="crush2/tp5a"/>
-		<part name="crush2/tp2"/>
-		<part name="crush2/tp6"/>
-		<part name="crush2/tp3"/>
-		<part name="crush2/tp7"/>
-		<part name="crush2/tp4"/>
-		<part name="crush2/tp8"/>
-		<part name="crush2/tp1"/>
-		<part name="crush2/tp5a"/>
-		<part name="crush2/tp2"/>
-		<part name="crush2/tp6"/>
-		<part name="crush2/tp3"/>
-		<part name="crush2/tp7"/>
-		<part name="crush2/tp4"/>
-		<part name="crush2/tp8"/>
-		<part name="crush2/tpa"/>
-		<part name="crush2/tpc"/>
-		<part name="crush2/tpb"/>
-		<part name="crush2/tpd"/>
-		<part name="crush2/tpd"/>
-		<part name="crush2/tpd"/>
-		<part name="crush2/tpd"/>
-		<part name="crush2/tpd"/>
-		<part name="82s126.1m"/>
-		<part name="2s140.4a"/>
-		<part name="82s126.3m"/>
-		<part name="82s123.7f"/>
+	<rom index="0" zip="crush.zip|crush2.zip" md5="f8b85c0ec812b2a9d8ff7d78d2f7db25">
+		<part crc="f276592e" name="tp1"/>
+		<part crc="3d302abe" name="tp5a"/>
+		<part crc="25f42e70" name="tp2"/>
+		<part crc="98279cbe" name="tp6"/>
+		<part crc="8377b4cb" name="tp3"/>
+		<part crc="d8e76c8c" name="tp7"/>
+		<part crc="90b28fa3" name="tp4"/>
+		<part crc="10854e1b" name="tp8"/>
+		<part crc="f276592e" name="tp1"/>
+		<part crc="3d302abe" name="tp5a"/>
+		<part crc="25f42e70" name="tp2"/>
+		<part crc="98279cbe" name="tp6"/>
+		<part crc="8377b4cb" name="tp3"/>
+		<part crc="d8e76c8c" name="tp7"/>
+		<part crc="90b28fa3" name="tp4"/>
+		<part crc="10854e1b" name="tp8"/>
+		<part crc="c7617198" name="tpa"/>
+		<part crc="e129d76a" name="tpc"/>
+		<part crc="d1899f05" name="tpb"/>
+		<part crc="d35d1caf" name="tpd"/>
+		<part crc="d35d1caf" name="tpd"/>
+		<part crc="d35d1caf" name="tpd"/>
+		<part crc="d35d1caf" name="tpd"/>
+		<part crc="d35d1caf" name="tpd"/>
+		<part crc="a9cc86bf" name="82s126.1m"/>
+		<part crc="63efb927" name="2s140.4a"/>
+		<part crc="77245b66" name="82s126.3m"/>
+		<part crc="2fc650bd" name="82s123.7f"/>
 	</rom>
 </misterromdescription>

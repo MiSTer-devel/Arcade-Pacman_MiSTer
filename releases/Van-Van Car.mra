@@ -1,14 +1,13 @@
 <misterromdescription>
 	<name>Van-Van Car</name>
-	<mameversion>0216</mameversion>
+	<mameversion>0220</mameversion>
 	<setname>vanvan</setname>
-	<mratimestamp>201911270000</mratimestamp>
+	<mratimestamp>20200427161917</mratimestamp>
 	<year>1983</year>
 	<manufacturer>Sanritsu</manufacturer>
 	<category>Maze</category>
 	<category>Maze / Balloons</category>
 	<category>Racing</category>
-	<setname>vanvan</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,F0,FD">
 		<dip bits="16"    name="Cabinet" ids="Upright,Cocktail"/>
@@ -20,23 +19,23 @@
 	</switches>
 	<rom index="1">
 		<part>0C</part>
-	</rom>  
-	<rom index="0" zip="vanvan.zip" md5="c1f4eeb2065671d958016120a7c3bcb0" type="merged|nonmerged">
-		<part name="van-1.50"/>
-		<part name="van-2.51"/>
-		<part name="van-3.52"/>
-		<part name="van-4.53"/>
-		<part name="van-5.39"/>
-		<part name="van-5.39"/>
-		<part name="van-5.39"/>
-		<part name="van-5.39"/>
-		<part name="van-20.18"/>
-		<part name="van-21.19"/>
-		<part name="van-20.18"/>
-		<part name="van-21.19"/>
-		<part name="6301-1.37"/>
-		<part name="6301-1.37"/>
-		<part name="6301-1.37"/>
-		<part name="6331-1.6"/>
+	</rom>
+	<rom index="0" zip="vanvan.zip" md5="c1f4eeb2065671d958016120a7c3bcb0">
+		<part crc="cf1b2df0" name="van-1.50"/>
+		<part crc="df58e1cb" name="van-2.51"/>
+		<part crc="15571e24" name="van-3.52"/>
+		<part crc="b724cbe0" name="van-4.53"/>
+		<part crc="db67414c" name="van-5.39"/>
+		<part crc="db67414c" name="van-5.39"/>
+		<part crc="db67414c" name="van-5.39"/>
+		<part crc="db67414c" name="van-5.39"/>
+		<part crc="60efbe66" name="van-20.18"/>
+		<part crc="5dd53723" name="van-21.19"/>
+		<part crc="60efbe66" name="van-20.18"/>
+		<part crc="5dd53723" name="van-21.19"/>
+		<part crc="4b803d9f" name="6301-1.37"/>
+		<part crc="4b803d9f" name="6301-1.37"/>
+		<part crc="4b803d9f" name="6301-1.37"/>
+		<part crc="ce1d9503" name="6331-1.6"/>
 	</rom>
 </misterromdescription>

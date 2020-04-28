@@ -1,12 +1,11 @@
 <misterromdescription>
 	<name>Pac-Man (Midway)</name>
-	<mameversion>0216</mameversion>
+	<mameversion>0220</mameversion>
 	<setname>pacman</setname>
-	<mratimestamp>201912310000</mratimestamp>
+	<mratimestamp>20200427161917</mratimestamp>
 	<year>1980</year>
 	<manufacturer>Namco (Midway license)</manufacturer>
 	<category>Maze / Pac-Man</category>
-	<setname>pacman</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,C9">
 		<dip bits="15"    name="Cabinet" ids="Cocktail,Upright"/>
@@ -15,58 +14,22 @@
 		<dip bits="20,21" name="Bonus Life After" ids="10000,15000,20000,None"/>
 		<dip bits="22"    name="Difficulty" ids="Hard,Normal"/>
 	</switches>
-	<rom index="0" zip="pacman.zip" md5="ce706464631f450f385314c90876321d" type="nonmerged">
-		<part name="pacman.6e"/>
-		<part name="pacman.6f"/>
-		<part name="pacman.6h"/>
-		<part name="pacman.6j"/>
-		<part name="pacman.6e"/>
-		<part name="pacman.6f"/>
-		<part name="pacman.6h"/>
-		<part name="pacman.6j"/>
-		<part name="pacman.5e"/>
-		<part name="pacman.5f"/>
-		<part name="pacman.5f"/>
-		<part name="pacman.5f"/>
-		<part name="pm1-3.1m"/>
-		<part name="pm1-4.4a"/>
-		<part name="pm1-2.3m"/>
-		<part name="pm1-1.7f"/>
-	</rom>
-	<rom index="0" zip="puckman.zip" md5="ce706464631f450f385314c90876321d" type="merged">
-		<part name="pacman/pacman.6e"/>
-		<part name="newpuckx/pacman.6f"/>
-		<part name="pacman/pacman.6h"/>
-		<part name="pacman/pacman.6j"/>
-		<part name="pacman/pacman.6e"/>
-		<part name="newpuckx/pacman.6f"/>
-		<part name="pacman/pacman.6h"/>
-		<part name="pacman/pacman.6j"/>
-		<part name="hangly/pacman.5e"/>
-		<part name="hangly/pacman.5f"/>
-		<part name="hangly/pacman.5f"/>
-		<part name="hangly/pacman.5f"/>
-		<part name="pm1-3.1m"/>
-		<part name="pm1-4.4a"/>
-		<part name="pm1-2.3m"/>
-		<part name="pm1-1.7f"/>
-	</rom>
-	<rom index="0" zip="pacman.zip" md5="ce706464631f450f385314c90876321d" type="split">
-		<part name="pacman.6e"/>
-		<part name="pacman.6f"/>
-		<part name="pacman.6h"/>
-		<part name="pacman.6j"/>
-		<part name="pacman.6e"/>
-		<part name="pacman.6f"/>
-		<part name="pacman.6h"/>
-		<part name="pacman.6j"/>
-		<part name="pacman.5e"/>
-		<part name="pacman.5f"/>
-		<part name="pacman.5f"/>
-		<part name="pacman.5f"/>
-		<part name="pm1-3.1m" zip="puckman.zip"/>
-		<part name="pm1-4.4a" zip="puckman.zip"/>
-		<part name="pm1-2.3m" zip="puckman.zip"/>
-		<part name="pm1-1.7f" zip="puckman.zip"/>
+	<rom index="0" zip="puckman.zip|pacman.zip" md5="ce706464631f450f385314c90876321d">
+		<part crc="c1e6ab10" name="pacman.6e"/>
+		<part crc="1a6fb2d4" name="pacman.6f"/>
+		<part crc="bcdd1beb" name="pacman.6h"/>
+		<part crc="817d94e3" name="pacman.6j"/>
+		<part crc="c1e6ab10" name="pacman.6e"/>
+		<part crc="1a6fb2d4" name="pacman.6f"/>
+		<part crc="bcdd1beb" name="pacman.6h"/>
+		<part crc="817d94e3" name="pacman.6j"/>
+		<part crc="0c944964" name="pacman.5e"/>
+		<part crc="958fedf9" name="pacman.5f"/>
+		<part crc="958fedf9" name="pacman.5f"/>
+		<part crc="958fedf9" name="pacman.5f"/>
+		<part crc="a9cc86bf" name="82s126.1m"/>
+		<part crc="3eb3a8e4" name="82s126.4a"/>
+		<part crc="77245b66" name="82s126.3m"/>
+		<part crc="2fc650bd" name="82s123.7f"/>
 	</rom>
 </misterromdescription>

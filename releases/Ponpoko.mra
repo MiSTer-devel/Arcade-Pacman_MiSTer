@@ -1,11 +1,11 @@
 <misterromdescription>
 	<name>Ponpoko</name>
-	<mameversion>0216</mameversion>
-	<mratimestamp>201911270000</mratimestamp>
+	<mameversion>0220</mameversion>
+	<setname>ponpoko</setname>
+	<mratimestamp>20200427161917</mratimestamp>
 	<year>1982</year>
 	<manufacturer>Sigma Enterprises Inc.</manufacturer>
 	<category>Platform</category>
-	<setname>ponpoko</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,FF,D1">
 		<dip bits="16,17" name="Bonus Life after" ids="Never,10K,30K,50K"/>
@@ -16,23 +16,23 @@
 	</switches>
 	<rom index="1">
 		<part>0B</part>
-	</rom>  
-	<rom index="0" zip="ponpoko.zip" md5="9000cca41cfa18130798595363a112ec" type="merged|nonmerged">
-		<part name="ppokoj1.bin"/>
-		<part name="ppokoj2.bin"/>
-		<part name="ppokoj3.bin"/>
-		<part name="ppokoj4.bin"/>
-		<part name="ppoko5.bin"/>
-		<part name="ppoko6.bin"/>
-		<part name="ppoko7.bin"/>
-		<part name="ppokoj8.bin"/>
-		<part name="ppoko9.bin"/>
-		<part name="ppoko10.bin"/>
-		<part name="ppoko9.bin"/>
-		<part name="ppoko10.bin"/>
-		<part name="82s126.1m"/>
-		<part name="82s126.4a"/>
-		<part name="82s126.3m"/>
-		<part name="82s123.7f"/>
+	</rom>
+	<rom index="0" zip="ponpoko.zip" md5="9000cca41cfa18130798595363a112ec">
+		<part crc="ffa3c004" name="ppokoj1.bin"/>
+		<part crc="4a496866" name="ppokoj2.bin"/>
+		<part crc="17da6ca3" name="ppokoj3.bin"/>
+		<part crc="9d39a565" name="ppokoj4.bin"/>
+		<part crc="54ca3d7d" name="ppoko5.bin"/>
+		<part crc="3055c7e0" name="ppoko6.bin"/>
+		<part crc="3cbe47ca" name="ppoko7.bin"/>
+		<part crc="04b63fc6" name="ppokoj8.bin"/>
+		<part crc="b73e1a06" name="ppoko9.bin"/>
+		<part crc="62069b5d" name="ppoko10.bin"/>
+		<part crc="b73e1a06" name="ppoko9.bin"/>
+		<part crc="62069b5d" name="ppoko10.bin"/>
+		<part crc="a9cc86bf" name="82s126.1m"/>
+		<part crc="3eb3a8e4" name="82s126.4a"/>
+		<part crc="77245b66" name="82s126.3m"/>
+		<part crc="2fc650bd" name="82s123.7f"/>
 	</rom>
 </misterromdescription>

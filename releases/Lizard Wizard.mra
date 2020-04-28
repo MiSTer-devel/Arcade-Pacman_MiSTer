@@ -1,12 +1,12 @@
 <misterromdescription>
 	<name>Lizard Wizard</name>
-	<mameversion>0216</mameversion>
-	<mratimestamp>201911270000</mratimestamp>
+	<mameversion>0220</mameversion>
+	<setname>lizwiz</setname>
+	<mratimestamp>20200427161917</mratimestamp>
 	<year>1985</year>
 	<manufacturer>Techstar (Sunn license)</manufacturer>
 	<category>Adventure / Fantasy</category>
 	<category>Space / Jetman</category>
-	<setname>lizwiz</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,BB">
 		<dip bits="16,17" name="Coinage" ids="2c/1cr,1c/1cr,1c/2cr,Free Play" values="1,3,2,0"/>
@@ -16,23 +16,23 @@
 	</switches>
 	<rom index="1">
 		<part>06</part>
-	</rom>  
-	<rom index="0" zip="lizwiz.zip" md5="17ba9e5b1df00c1652a9c054f1996d3f" type="merged|nonmerged">
-		<part name="6e.cpu"/>
-		<part name="6f.cpu"/>
-		<part name="6h.cpu"/>
-		<part name="6j.cpu"/>
-		<part name="wiza"/>
-		<part name="wizb"/>
-		<part name="wiza"/>
-		<part name="wizb"/>
-		<part name="5e.cpu"/>
-		<part name="5f.cpu"/>
-		<part name="5e.cpu"/>
-		<part name="5f.cpu"/>
-		<part name="82s126.1m"/>
-		<part name="4a.cpu"/>
-		<part name="82s126.3m"/>
-		<part name="7f.cpu"/>
+	</rom>
+	<rom index="0" zip="lizwiz.zip" md5="17ba9e5b1df00c1652a9c054f1996d3f">
+		<part crc="32bc1990" name="6e.cpu"/>
+		<part crc="ef24b414" name="6f.cpu"/>
+		<part crc="30bed83d" name="6h.cpu"/>
+		<part crc="dd09baeb" name="6j.cpu"/>
+		<part crc="f6dea3a6" name="wiza"/>
+		<part crc="f27fb5a8" name="wizb"/>
+		<part crc="f6dea3a6" name="wiza"/>
+		<part crc="f27fb5a8" name="wizb"/>
+		<part crc="45059e73" name="5e.cpu"/>
+		<part crc="d2469717" name="5f.cpu"/>
+		<part crc="45059e73" name="5e.cpu"/>
+		<part crc="d2469717" name="5f.cpu"/>
+		<part crc="a9cc86bf" name="82s126.1m"/>
+		<part crc="5fdca536" name="4a.cpu"/>
+		<part crc="77245b66" name="82s126.3m"/>
+		<part crc="7549a947" name="7f.cpu"/>
 	</rom>
 </misterromdescription>

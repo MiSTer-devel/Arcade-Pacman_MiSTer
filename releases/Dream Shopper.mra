@@ -1,12 +1,12 @@
 <misterromdescription>
 	<name>Dream Shopper</name>
-	<mameversion>0216</mameversion>
-	<mratimestamp>201911270000</mratimestamp>
+	<mameversion>0220</mameversion>
+	<setname>dremshpr</setname>
+	<mratimestamp>20200427161917</mratimestamp>
 	<year>1982</year>
 	<manufacturer>Sanritsu</manufacturer>
 	<category>Maze</category>
 	<category>Maze / Blocks</category>
-	<setname>dremshpr</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,F1,FE">
 		<dip bits="16"    name="Cabinet" ids="Cocktail,Upright"/>
@@ -18,23 +18,23 @@
 	</switches>
 	<rom index="1">
 		<part>0E</part>
-	</rom>  
-	<rom index="0" zip="dremshpr.zip" md5="3d1ab455cb02580e03249baf556fa3af" type="merged|nonmerged">
-		<part name="red_1.50"/>
-		<part name="red_2.51"/>
-		<part name="red_3.52"/>
-		<part name="red_4.53"/>
-		<part name="red_5.39"/>
-		<part name="red_6.40"/>
-		<part name="red_7.41"/>
-		<part name="red_7.41"/>
-		<part name="red-20.18"/>
-		<part name="red-21.19"/>
-		<part name="red-21.19"/>
-		<part name="red-21.19"/>
-		<part name="6301-1.37"/>
-		<part name="6301-1.37"/>
-		<part name="6301-1.37"/>
-		<part name="6331-1.6"/>
+	</rom>
+	<rom index="0" zip="dremshpr.zip" md5="3d1ab455cb02580e03249baf556fa3af">
+		<part crc="830c6361" name="red_1.50"/>
+		<part crc="d22551cc" name="red_2.51"/>
+		<part crc="0713a34a" name="red_3.52"/>
+		<part crc="f38bcaaa" name="red_4.53"/>
+		<part crc="6a382267" name="red_5.39"/>
+		<part crc="4cf8b121" name="red_6.40"/>
+		<part crc="bd4fc4ba" name="red_7.41"/>
+		<part crc="bd4fc4ba" name="red_7.41"/>
+		<part crc="2d6698dc" name="red-20.18"/>
+		<part crc="38c9ce9b" name="red-21.19"/>
+		<part crc="38c9ce9b" name="red-21.19"/>
+		<part crc="38c9ce9b" name="red-21.19"/>
+		<part crc="39d6fb5c" name="6301-1.37"/>
+		<part crc="39d6fb5c" name="6301-1.37"/>
+		<part crc="39d6fb5c" name="6301-1.37"/>
+		<part crc="ce1d9503" name="6331-1.6"/>
 	</rom>
 </misterromdescription>

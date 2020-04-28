@@ -1,11 +1,11 @@
 <misterromdescription>
 	<name>Eyes (US set 1)</name>
-	<mameversion>0216</mameversion>
-	<mratimestamp>201911270000</mratimestamp>
+	<mameversion>0220</mameversion>
+	<setname>eyes</setname>
+	<mratimestamp>20200427161917</mratimestamp>
 	<year>1982</year>
 	<manufacturer>Techstar (Rock-Ola license)</manufacturer>
 	<category>Maze</category>
-	<setname>eyes</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,FB">
 		<dip bits="22"    name="Cabinet" ids="Cocktail,Upright"/>
@@ -15,23 +15,23 @@
 	</switches>
 	<rom index="1">
 		<part>07</part>
-	</rom>  
-	<rom index="0" zip="eyes.zip" md5="6a14c3752f33a144760b4fe8f45ed5f7" type="merged|nonmerged">
-		<part name="d7"/>
-		<part name="e7"/>
-		<part name="f7"/>
-		<part name="h7"/>
-		<part name="d7"/>
-		<part name="e7"/>
-		<part name="f7"/>
-		<part name="h7"/>
-		<part name="d5"/>
-		<part name="e5"/>
-		<part name="e5"/>
-		<part name="e5"/>
-		<part name="82s126.1m"/>
-		<part name="82s129.4a"/>
-		<part name="82s126.3m"/>
-		<part name="82s123.7f"/>
+	</rom>
+	<rom index="0" zip="eyes.zip" md5="6a14c3752f33a144760b4fe8f45ed5f7">
+		<part crc="3b09ac89" name="d7"/>
+		<part crc="97096855" name="e7"/>
+		<part crc="731e294e" name="f7"/>
+		<part crc="22f7a719" name="h7"/>
+		<part crc="3b09ac89" name="d7"/>
+		<part crc="97096855" name="e7"/>
+		<part crc="731e294e" name="f7"/>
+		<part crc="22f7a719" name="h7"/>
+		<part crc="d6af0030" name="d5"/>
+		<part crc="a42b5201" name="e5"/>
+		<part crc="a42b5201" name="e5"/>
+		<part crc="a42b5201" name="e5"/>
+		<part crc="a9cc86bf" name="82s126.1m"/>
+		<part crc="d8d78829" name="82s129.4a"/>
+		<part crc="77245b66" name="82s126.3m"/>
+		<part crc="2fc650bd" name="82s123.7f"/>
 	</rom>
 </misterromdescription>

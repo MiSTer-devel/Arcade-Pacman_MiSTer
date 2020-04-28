@@ -1,11 +1,11 @@
 <misterromdescription>
 	<name>Gorkans</name>
-	<mameversion>0216</mameversion>
-	<mratimestamp>201911270000</mratimestamp>
+	<mameversion>0220</mameversion>
+	<setname>gorkans</setname>
+	<mratimestamp>20200427161917</mratimestamp>
 	<year>1983</year>
 	<manufacturer>Techstar</manufacturer>
 	<category>Maze</category>
-	<setname>gorkans</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,FB">
 		<dip bits="22"    name="Cabinet" ids="Cocktail,Upright"/>
@@ -15,65 +15,35 @@
 	</switches>
 	<rom index="1">
 		<part>06</part>
-	</rom>  
-	<rom index="0" zip="gorkans.zip" md5="1843d4f76413b0e00a0aaf129483af5a" type="nonmerged">
-		<part name="gorkans8.rom"/>
-		<part name="gorkans4.rom"/>
-		<part name="gorkans7.rom"/>
-		<part name="gorkans3.rom"/>
-		<part name="gorkans6.rom"/>
-		<part name="gorkans2.rom"/>
-		<part name="gorkans5.rom"/>
-		<part name="gorkans1.rom"/>
-		<part name="gorkans8.rom"/>
-		<part name="gorkans4.rom"/>
-		<part name="gorkans7.rom"/>
-		<part name="gorkans3.rom"/>
-		<part name="gorkans6.rom"/>
-		<part name="gorkans2.rom"/>
-		<part name="gorkans5.rom"/>
-		<part name="gorkans1.rom"/>
-		<part name="gorkgfx4.rom"/>
-		<part name="gorkgfx2.rom"/>
-		<part name="gorkgfx3.rom"/>
-		<part name="gorkgfx1.rom"/>
-		<part name="gorkgfx4.rom"/>
-		<part name="gorkgfx2.rom"/>
-		<part name="gorkgfx3.rom"/>
-		<part name="gorkgfx1.rom"/>
-		<part name="gorkprom.3"/>
-		<part name="gorkprom.1"/>
-		<part name="gorkprom.2"/>
-		<part name="gorkprom.4"/>
 	</rom>
-	<rom index="0" zip="mrtnt.zip" md5="1843d4f76413b0e00a0aaf129483af5a" type="merged">
-		<part name="gorkans/gorkans8.rom"/>
-		<part name="gorkans/gorkans4.rom"/>
-		<part name="gorkans/gorkans7.rom"/>
-		<part name="gorkans/gorkans3.rom"/>
-		<part name="gorkans/gorkans6.rom"/>
-		<part name="gorkans/gorkans2.rom"/>
-		<part name="gorkans/gorkans5.rom"/>
-		<part name="gorkans/gorkans1.rom"/>
-		<part name="gorkans/gorkans8.rom"/>
-		<part name="gorkans/gorkans4.rom"/>
-		<part name="gorkans/gorkans7.rom"/>
-		<part name="gorkans/gorkans3.rom"/>
-		<part name="gorkans/gorkans6.rom"/>
-		<part name="gorkans/gorkans2.rom"/>
-		<part name="gorkans/gorkans5.rom"/>
-		<part name="gorkans/gorkans1.rom"/>
-		<part name="gorkans/gorkgfx4.rom"/>
-		<part name="gorkans/gorkgfx2.rom"/>
-		<part name="gorkans/gorkgfx3.rom"/>
-		<part name="gorkans/gorkgfx1.rom"/>
-		<part name="gorkans/gorkgfx4.rom"/>
-		<part name="gorkans/gorkgfx2.rom"/>
-		<part name="gorkans/gorkgfx3.rom"/>
-		<part name="gorkans/gorkgfx1.rom"/>
-		<part name="82s126.1m"/>
-		<part name="82s126.4a"/>
-		<part name="82s126.3m"/>
-		<part name="82s123.7f"/>
+	<rom index="0" zip="mrtnt.zip|gorkans.zip" md5="1843d4f76413b0e00a0aaf129483af5a">
+		<part crc="55100b18" name="gorkans8.rom"/>
+		<part crc="b5c604bf" name="gorkans4.rom"/>
+		<part crc="b8c6def4" name="gorkans7.rom"/>
+		<part crc="4602c840" name="gorkans3.rom"/>
+		<part crc="21412a62" name="gorkans6.rom"/>
+		<part crc="a013310b" name="gorkans2.rom"/>
+		<part crc="122969b2" name="gorkans5.rom"/>
+		<part crc="f2524b11" name="gorkans1.rom"/>
+		<part crc="55100b18" name="gorkans8.rom"/>
+		<part crc="b5c604bf" name="gorkans4.rom"/>
+		<part crc="b8c6def4" name="gorkans7.rom"/>
+		<part crc="4602c840" name="gorkans3.rom"/>
+		<part crc="21412a62" name="gorkans6.rom"/>
+		<part crc="a013310b" name="gorkans2.rom"/>
+		<part crc="122969b2" name="gorkans5.rom"/>
+		<part crc="f2524b11" name="gorkans1.rom"/>
+		<part crc="39cd0dbc" name="gorkgfx4.rom"/>
+		<part crc="33d52535" name="gorkgfx2.rom"/>
+		<part crc="4b6b7970" name="gorkgfx3.rom"/>
+		<part crc="ed70bb3c" name="gorkgfx1.rom"/>
+		<part crc="39cd0dbc" name="gorkgfx4.rom"/>
+		<part crc="33d52535" name="gorkgfx2.rom"/>
+		<part crc="4b6b7970" name="gorkgfx3.rom"/>
+		<part crc="ed70bb3c" name="gorkgfx1.rom"/>
+		<part crc="a9cc86bf" name="gorkprom.3"/>
+		<part crc="3eb3a8e4" name="gorkprom.1"/>
+		<part crc="77245b66" name="gorkprom.2"/>
+		<part crc="2fc650bd" name="gorkprom.4"/>
 	</rom>
 </misterromdescription>

@@ -1,36 +1,36 @@
 <misterromdescription>
 	<name>Pacman Club - Club Lambada (Argentina)</name>
-	<mameversion>0216</mameversion>
-	<mratimestamp>201911270000</mratimestamp>
+	<mameversion>0220</mameversion>
+	<setname>clubpacm</setname>
+	<mratimestamp>20200427161917</mratimestamp>
 	<year>1989</year>
 	<manufacturer>Miky SRL</manufacturer>
 	<category>Maze / Pac-Man</category>
-	<setname>clubpacm</setname>
 	<rbf>pacman</rbf>
 	<switches default="FF,FF,C9">
 		<dip bits="15"    name="Cabinet" ids="Cocktail,Upright"/>
 		<dip bits="16,17" name="Coinage" ids="2c/1cr,1c/1cr,1c/2cr,Free Play" values="3,1,2,0"/>
-		<dip bits="18"    name="Lives" ids="3,5"/>
-		<dip bits="20,21" name="Bonus Life After" ids="20000,40000,80000,None"/>
+		<dip bits="18,19" name="Lives" ids="1,2,3,5"/>
+		<dip bits="20,21" name="Bonus Life After" ids="10000,15000,20000,None"/>
 		<dip bits="22"    name="Difficulty" ids="Hard,Normal"/>
 	</switches>
 	<rom index="1">
 		<part>02</part>
 	</rom>
-	<rom index="0" zip="clubpacm.zip" md5="7ecb94f8384ea92da503e670dc9f8397" type="merged|nonmerged">
-		<part name="prg.6f"/>
-		<part name="12.5e"/>
-		<part name="14.5h"/>
-		<part name="13.5f"/>
-		<part name="15.5j"/>
-		<part name="12.5e"/>
-		<part name="14.5h"/>
-		<part name="13.5f"/>
-		<part name="15.5j"/>
-		<part name="12.5e"/>
-		<part name="m7611.1m"/>
-		<part name="m7611.4a"/>
-		<part name="m7611.3m"/>
-		<part name="n82s123n.7f"/>
+	<rom index="0" zip="clubpacm.zip" md5="7ecb94f8384ea92da503e670dc9f8397">
+		<part crc="9baa78a2" name="prg.6f"/>
+		<part crc="93933d1d" name="12.5e"/>
+		<part crc="7409fbec" name="14.5h"/>
+		<part crc="22b0188a" name="13.5f"/>
+		<part crc="50c7477d" name="15.5j"/>
+		<part crc="93933d1d" name="12.5e"/>
+		<part crc="7409fbec" name="14.5h"/>
+		<part crc="22b0188a" name="13.5f"/>
+		<part crc="50c7477d" name="15.5j"/>
+		<part crc="93933d1d" name="12.5e"/>
+		<part crc="a9cc86bf" name="m7611.1m"/>
+		<part crc="3eb3a8e4" name="m7611.4a"/>
+		<part crc="0e307106" name="m7611.3m"/>
+		<part crc="2fc650bd" name="n82s123n.7f"/>
 	</rom>
 </misterromdescription>
