@@ -164,8 +164,6 @@ wire        ioctl_wr;
 wire [24:0] ioctl_addr;
 wire  [7:0] ioctl_dout;
 
-wire [10:0] ps2_key;
-
 wire [15:0] joy1 = (mod_club | mod_jmpst) ? joy1a : (joy1a | joy2a);
 wire [15:0] joy2 = (mod_club | mod_jmpst) ? joy2a : (joy1a | joy2a);
 wire [15:0] joy1a;
@@ -194,8 +192,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.ioctl_index(ioctl_index),
 
 	.joystick_0(joy1a),
-	.joystick_1(joy2a),
-	.ps2_key(ps2_key)
+	.joystick_1(joy2a)
 );
 
 reg mod_plus = 0;
@@ -244,58 +241,6 @@ end
 reg [7:0] sw[8];
 always @(posedge clk_sys) if (ioctl_wr && (ioctl_index==254) && !ioctl_addr[24:3]) sw[ioctl_addr[2:0]] <= ioctl_dout;
 
-wire       pressed = ps2_key[9];
-wire [8:0] code    = ps2_key[8:0];
-always @(posedge clk_sys) begin
-	reg old_state;
-	old_state <= ps2_key[10];
-	
-	if(old_state != ps2_key[10]) begin
-		casex(code)
-			'hX75: btn_up          <= pressed; // up
-			'hX72: btn_down        <= pressed; // down
-			'hX6B: btn_left        <= pressed; // left
-			'hX74: btn_right       <= pressed; // right
-			'h029: btn_fire        <= pressed; // space
-			'h014: btn_fire        <= pressed; // ctrl
-
-			'h005: btn_start_1     <= pressed; // F1
-			'h006: btn_start_2     <= pressed; // F2
-			'h004: btn_coin        <= pressed; // F3
-			'h00C: btn_cheat       <= pressed; // F4
-
-			// JPAC/IPAC/MAME Style Codes
-			'h016: btn_start_1     <= pressed; // 1
-			'h01E: btn_start_2     <= pressed; // 2
-			'h02E: btn_coin_1      <= pressed; // 5
-			'h036: btn_coin_2      <= pressed; // 6
-			'h02D: btn_up_2        <= pressed; // R
-			'h02B: btn_down_2      <= pressed; // F
-			'h023: btn_left_2      <= pressed; // D
-			'h034: btn_right_2     <= pressed; // G
-			'h01C: btn_fire_2      <= pressed; // A
-		endcase
-	end
-end
-
-reg btn_up    = 0;
-reg btn_down  = 0;
-reg btn_right = 0;
-reg btn_left  = 0;
-reg btn_coin  = 0;
-reg btn_fire  = 0;
-reg btn_cheat = 0;
-
-reg btn_start_1=0;
-reg btn_start_2=0;
-reg btn_coin_1=0;
-reg btn_coin_2=0;
-reg btn_up_2=0;
-reg btn_down_2=0;
-reg btn_left_2=0;
-reg btn_right_2=0;
-reg btn_fire_2=0;
-
 wire no_rotate = status[2] | direct_video | mod_ponp;
 
 wire m_up,m_down,m_left,m_right;
@@ -304,10 +249,10 @@ joyonedir jod
 	clk_sys,
 	mod_bird,
 	{
-		btn_up    | joy1[3],
-		btn_down  | joy1[2],
-		btn_left  | joy1[1],
-		btn_right | joy1[0]
+		joy1[3],
+		joy1[2],
+		joy1[1],
+		joy1[0]
 	},
 	{m_up,m_down,m_left,m_right}
 );
@@ -318,21 +263,21 @@ joyonedir jod_2
 	clk_sys,
 	mod_bird,
 	{
-		btn_up_2    | joy2[3],
-		btn_down_2  | joy2[2],
-		btn_left_2  | joy2[1],
-		btn_right_2 | joy2[0]
+		joy2[3],
+		joy2[2],
+		joy2[1],
+		joy2[0]
 	},
 	{m_up_2,m_down_2,m_left_2,m_right_2}
 );
 
-wire m_fire     = btn_fire    | joy1[4];
-wire m_fire_2   = btn_fire_2  | joy2[4];
-wire m_start    = btn_start_1 | joy1[5] | joy2[5];
-wire m_start_2  = btn_start_2 | joy1[6] | joy2[6];
-wire m_coin     = btn_coin    | joy1[7] | joy2[7] | btn_coin_1 | btn_coin_2;
+wire m_fire     = joy1[4];
+wire m_fire_2   = joy2[4];
+wire m_start    = joy1[5] | joy2[5];
+wire m_start_2  = joy1[6] | joy2[6];
+wire m_coin     = joy1[7] | joy2[7];
 
-wire m_cheat    = btn_cheat | joy1[8] | joy2[8];
+wire m_cheat    = joy1[8] | joy2[8];
 
 wire hblank, vblank;
 wire ce_vid = ce_6m;
