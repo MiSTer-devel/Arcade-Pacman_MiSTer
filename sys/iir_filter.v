@@ -61,7 +61,7 @@ wire [23:0] vcoeff_y0 = use_params ? pcoeff_y0[23:0] : cy0;
 wire [23:0] vcoeff_y1 = use_params ? pcoeff_y1[23:0] : cy1;
 wire [23:0] vcoeff_y2 = use_params ? pcoeff_y2[23:0] : cy2;
 
-wire signed [59:0] inp_mul = $signed(inp) * $signed(vcoeff);
+wire [59:0] inp_mul = $signed(inp) * $signed(vcoeff);
 
 wire [39:0] x = inp_mul[59:20];
 wire [39:0] y = x + tap0;
@@ -188,6 +188,7 @@ module DC_blocker
 (
 	input         clk,
 	input         ce, // 48/96 KHz
+	input         mute,
 
 	input         sample_rate,
 	input  [15:0] din,
@@ -205,6 +206,6 @@ always @(posedge clk) if(ce) begin
 	y  <= ^y0[39:38] ? {{2{y0[39]}},{38{y0[38]}}} : y0;
 end
 
-assign dout = y[38:23];
+assign dout = mute ? 16'd0 : y[38:23];
 
 endmodule

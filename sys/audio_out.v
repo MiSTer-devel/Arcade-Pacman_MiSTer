@@ -152,6 +152,29 @@ always @(posedge clk) begin
 	if(cr2 == cr1) cr <= cr2;
 end
 
+reg a_en1 = 0, a_en2 = 0;
+always @(posedge clk, posedge reset) begin
+	reg  [1:0] dly1 = 0;
+	reg [14:0] dly2 = 0;
+
+	if(reset) begin
+		dly1 <= 0;
+		dly2 <= 0;
+		a_en1 <= 0;
+		a_en2 <= 0;
+	end
+	else begin
+		if(flt_ce) begin
+			if(~&dly1) dly1 <= dly1 + 1'd1;
+			else a_en1 <= 1;
+		end
+
+		if(sample_ce) begin
+			if(!dly2[13+sample_rate]) dly2 <= dly2 + 1'd1;
+			else a_en2 <= 1;
+		end
+	end
+end
 
 wire [15:0] acl, acr;
 IIR_filter #(.use_params(0)) IIR_filter
@@ -159,7 +182,7 @@ IIR_filter #(.use_params(0)) IIR_filter
 	.clk(clk),
 	.reset(reset),
 
-	.ce(flt_ce),
+	.ce(flt_ce & a_en1),
 	.sample_ce(sample_ce),
 
 	.cx(cx),
@@ -182,6 +205,7 @@ DC_blocker dcb_l
 	.clk(clk),
 	.ce(sample_ce),
 	.sample_rate(sample_rate),
+	.mute(~a_en2),
 	.din(acl),
 	.dout(adl)
 );
@@ -192,6 +216,7 @@ DC_blocker dcb_r
 	.clk(clk),
 	.ce(sample_ce),
 	.sample_rate(sample_rate),
+	.mute(~a_en2),
 	.din(acr),
 	.dout(adr)
 );
@@ -242,8 +267,8 @@ module aud_mix_top
 	input      [15:0] linux_audio,
 	input      [15:0] pre_in,
 
-	output reg [15:0] pre_out,
-	output reg [15:0] out
+	output reg [15:0] pre_out = 0,
+	output reg [15:0] out = 0
 );
 
 reg signed [16:0] a1, a2, a3, a4;

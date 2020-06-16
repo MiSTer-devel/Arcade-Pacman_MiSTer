@@ -32,11 +32,15 @@ module emu
 	inout  [45:0] HPS_BUS,
 
 	//Base video clock. Usually equals to CLK_SYS.
-	output        VGA_CLK,
+	output        CLK_VIDEO,
 
-	//Multiple resolutions are supported using different VGA_CE rates.
+	//Multiple resolutions are supported using different CE_PIXEL rates.
 	//Must be based on CLK_VIDEO
-	output        VGA_CE,
+	output        CE_PIXEL,
+
+	//Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
+	output  [7:0] VIDEO_ARX,
+	output  [7:0] VIDEO_ARY,
 
 	output  [7:0] VGA_R,
 	output  [7:0] VGA_G,
@@ -45,25 +49,23 @@ module emu
 	output        VGA_VS,
 	output        VGA_DE,    // = ~(VBlank | HBlank)
 	output        VGA_F1,
+	output [1:0]  VGA_SL,
 
-	//Base video clock. Usually equals to CLK_SYS.
-	output        HDMI_CLK,
+	// Use framebuffer from DDRAM
+	// FB_FORMAT:
+	//    [2:0] : 011=8bpp(palette) 100=16bpp 101=24bpp 110=32bpp
+	//    [3]   : 0=16bits 565 1=16bits 1555
+	//    [4]   : 0=RGB  1=BGR (for 16/24/32 modes)
+	//
+	// stride is modulo 256 of bytes
 
-	//Multiple resolutions are supported using different HDMI_CE rates.
-	//Must be based on CLK_VIDEO
-	output        HDMI_CE,
-
-	output  [7:0] HDMI_R,
-	output  [7:0] HDMI_G,
-	output  [7:0] HDMI_B,
-	output        HDMI_HS,
-	output        HDMI_VS,
-	output        HDMI_DE,   // = ~(VBlank | HBlank)
-	output  [1:0] HDMI_SL,   // scanlines fx
-
-	//Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
-	output  [7:0] HDMI_ARX,
-	output  [7:0] HDMI_ARY,
+	output        FB_EN,
+	output  [4:0] FB_FORMAT,
+	output [11:0] FB_WIDTH,
+	output [11:0] FB_HEIGHT,
+	output [31:0] FB_BASE,
+	input         FB_VBL,
+	input         FB_LL,
 
 	output        LED_USER,  // 1 - ON, 0 - OFF.
 
@@ -77,6 +79,19 @@ module emu
 	output [15:0] AUDIO_L,
 	output [15:0] AUDIO_R,
 	output        AUDIO_S,    // 1 - signed audio samples, 0 - unsigned
+
+	//High latency DDR3 RAM interface
+	//Use for non-critical time purposes
+	output        DDRAM_CLK,
+	input         DDRAM_BUSY,
+	output  [7:0] DDRAM_BURSTCNT,
+	output [28:0] DDRAM_ADDR,
+	input  [63:0] DDRAM_DOUT,
+	input         DDRAM_DOUT_READY,
+	output        DDRAM_RD,
+	output [63:0] DDRAM_DIN,
+	output  [7:0] DDRAM_BE,
+	output        DDRAM_WE,
 
 	// Open-drain User port.
 	// 0 - D+/RX
@@ -93,8 +108,8 @@ assign LED_USER  = ioctl_download;
 assign LED_DISK  = 0;
 assign LED_POWER = 0;
 
-assign HDMI_ARX = status[1] ? 8'd16 : (status[2] | mod_ponp) ? 8'd4 : 8'd3;
-assign HDMI_ARY = status[1] ? 8'd9  : (status[2] | mod_ponp) ? 8'd3 : 8'd4;
+assign VIDEO_ARX = status[1] ? 8'd16 : (status[2] | mod_ponp) ? 8'd4 : 8'd3;
+assign VIDEO_ARY = status[1] ? 8'd9  : (status[2] | mod_ponp) ? 8'd3 : 8'd4;
 
 `include "build_id.v" 
 localparam CONF_STR = {
@@ -175,6 +190,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS(HPS_BUS),
+	.EXT_BUS(),
 
 	.conf_str(CONF_STR),
 
@@ -241,8 +257,6 @@ end
 reg [7:0] sw[8];
 always @(posedge clk_sys) if (ioctl_wr && (ioctl_index==254) && !ioctl_addr[24:3]) sw[ioctl_addr[2:0]] <= ioctl_dout;
 
-wire no_rotate = status[2] | direct_video | mod_ponp;
-
 wire m_up,m_down,m_left,m_right;
 joyonedir jod
 (
@@ -285,7 +299,7 @@ wire hs, vs;
 wire [2:0] r,g;
 wire [1:0] b;
 
-arcade_video #(288,224,8) arcade_video
+arcade_video #(288,8) arcade_video
 (
 	.*,
 
@@ -298,9 +312,12 @@ arcade_video #(288,224,8) arcade_video
 	.HSync(hs),
 	.VSync(vs),
 
-	.rotate_ccw(0),
 	.fx(status[5:3])
 );
+
+wire no_rotate = status[2] | direct_video | mod_ponp;
+wire rotate_ccw = 0;
+screen_rotate screen_rotate (.*);
 
 wire [9:0] audio;
 assign AUDIO_L = {audio, 6'd0};
