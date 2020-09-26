@@ -9,13 +9,14 @@
 	<category>Maze / Balloons</category>
 	<category>Racing</category>
 	<rbf>pacman</rbf>
-	<switches default="FF,FF,F0,FD">
+	<switches default="FF,FF,F0,00">
 		<dip bits="16"    name="Cabinet" ids="Upright,Cocktail"/>
 		<dip bits="17"    name="Flip Screen" ids="On,Off"/>
 		<dip bits="18,19" name="Bonus Life after" ids="70k and 200k,40k and 140k,20k and 100k,Never"/>
 		<dip bits="20,21" name="Lives" ids="6,5,4,3"/>
 		<dip bits="22,23" name="Coinage" ids="2c/1cr,1c/3cr,1c/2cr,1c/1cr"/>
 		<dip bits="25"    name="Invulnerability" ids="Off,On"/>
+		<dip bits="27"    name="Missile effect" ids="Off,On"/>
 	</switches>
 	<rom index="1">
 		<part>0C</part>
