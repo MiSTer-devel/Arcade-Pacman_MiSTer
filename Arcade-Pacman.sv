@@ -58,7 +58,6 @@ module emu
 	//    [4]   : 0=RGB  1=BGR (for 16/24/32 modes)
 	//
 	// FB_STRIDE either 0 (rounded to 256 bytes) or multiple of 16 bytes.
-
 	output        FB_EN,
 	output  [4:0] FB_FORMAT,
 	output [11:0] FB_WIDTH,
@@ -67,6 +66,15 @@ module emu
 	output [13:0] FB_STRIDE,
 	input         FB_VBL,
 	input         FB_LL,
+	output        FB_FORCE_BLANK,
+
+	// Palette control for 8bit modes.
+	// Ignored for other video modes.
+	output        FB_PAL_CLK,
+	output  [7:0] FB_PAL_ADDR,
+	output [23:0] FB_PAL_DOUT,
+	input  [23:0] FB_PAL_DIN,
+	output        FB_PAL_WR,
 
 	output        LED_USER,  // 1 - ON, 0 - OFF.
 
@@ -293,6 +301,8 @@ wire m_start_2  = joy1[6] | joy2[6];
 wire m_coin     = joy1[7] | joy2[7];
 
 wire m_cheat    = joy1[8] | joy2[8];
+
+assign {FB_PAL_CLK, FB_FORCE_BLANK, FB_PAL_ADDR, FB_PAL_DOUT, FB_PAL_WR} = '0;
 
 wire hblank, vblank;
 wire ce_vid = ce_6m;

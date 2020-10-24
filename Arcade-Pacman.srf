@@ -29,3 +29,4 @@
 { "" "" "" "alt_vip_packet_transfer.sdc" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "alt_vip_common_dc_mixed_widths_fifo.sdc" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "vip_HPS_fpga_interfaces.sdc" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "ascal:ascal\|altsyncram:pal2_mem_rtl_0\|*" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
