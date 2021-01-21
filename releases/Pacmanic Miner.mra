@@ -13,7 +13,7 @@
 	<rom index="1">
 		<part>0D</part>
 	</rom>
-	<rom index="0" zip="" md5="015ec85c529b72170d7c32fa0062d4fd">
+	<rom index="0" md5="015ec85c529b72170d7c32fa0062d4fd">
 	<part>
 c3 01 01 00 00 00 00 00 77 23 10 fc c9 00 00 00 
 85 6f 8c 95 67 7e c9 00 78 87 d7 5f 23 56 eb c9 
