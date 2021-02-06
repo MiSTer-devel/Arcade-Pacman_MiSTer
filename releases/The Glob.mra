@@ -30,4 +30,14 @@
 		<part crc="77245b66" name="82s126.3m"/>
 		<part crc="1f617527" name="7_f_the_glob.7f"/>
 	</rom>
+	
+	<rom index="3" md5="none">
+    <part>
+	    00 00 4C 48 3C 4D 00 00
+	    00 00 4C B9 01 15 15 00
+	    00 00 4C 93 01 01 01 00
+	</part>
+
+   </rom>	
+   <nvram index="4" size="62"/>	
 </misterromdescription>

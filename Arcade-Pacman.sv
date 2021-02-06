@@ -187,10 +187,12 @@ wire        forced_scandoubler;
 wire        direct_video;
 
 wire        ioctl_download;
+wire        ioctl_upload;
 wire  [7:0] ioctl_index;
 wire        ioctl_wr;
 wire [24:0] ioctl_addr;
 wire  [7:0] ioctl_dout;
+wire  [7:0] ioctl_din;
 
 wire [15:0] joy1 = (mod_club | mod_jmpst) ? joy1a : (joy1a | joy2a);
 wire [15:0] joy2 = (mod_club | mod_jmpst) ? joy2a : (joy1a | joy2a);
@@ -215,9 +217,11 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.direct_video(direct_video),
 
 	.ioctl_download(ioctl_download),
+	.ioctl_upload(ioctl_upload),
 	.ioctl_wr(ioctl_wr),
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_dout),
+	.ioctl_din(ioctl_din),
 	.ioctl_index(ioctl_index),
 
 	.joystick_0(joy1a),
@@ -400,8 +404,35 @@ pacman pacman
 	.CLK(clk_sys),
 	.ENA_6(ce_6m),
 	.ENA_4(ce_4m),
-	.ENA_1M79(ce_1m79)
+	.ENA_1M79(ce_1m79),
+	
+	
+	.ram_address(ram_address),
+	.ram_data_hi(ioctl_din),
+	.ram_data_in(hiscore_to_ram),
+	.ram_data_write(hiscore_write)
+	);
+
+
+
+wire [11:0]ram_address;
+wire [7:0]hiscore_to_ram;
+wire hiscore_write;
+
+hiscore hi (
+   .clk(clk_sys),
+   .ioctl_upload(ioctl_upload),
+   .ioctl_download(ioctl_download),
+   .ioctl_wr(ioctl_wr),
+   .ioctl_addr(ioctl_addr),
+   .ioctl_dout(ioctl_dout),
+   .ioctl_din(ioctl_din),
+   .ioctl_index(ioctl_index),
+   .ram_address(ram_address),
+	.data_to_ram(hiscore_to_ram),
+	.ram_write(hiscore_write)
 );
+ 
 
 endmodule
 
