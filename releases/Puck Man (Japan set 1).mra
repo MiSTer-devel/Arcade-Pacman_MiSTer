@@ -47,4 +47,16 @@
 		<part crc="77245b66" name="pm1-2.3m"/>
 		<part crc="2fc650bd" name="pm1-1.7f"/>
 	</rom>
+	
+	<rom index="3" md5="none">
+    <part>
+	    00 00 4E 88 04 00 00 00
+	    00 00 43 ED 06 40 40 00
+	    00 00 43 D1 01 48 48 00
+	</part>
+
+   </rom>	
+   <nvram index="4" size="11"/>
+	
+	
 </misterromdescription>

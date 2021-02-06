@@ -35,4 +35,17 @@
 		<part crc="77245b66" name="82s126.3m"/>
 		<part crc="2fc650bd" name="82s123.7f"/>
 	</rom>
+	
+	
+	<rom index="3" md5="none">
+    <part>
+	    00 00 4C 40 03 00 00 00
+	    00 00 4E 5A 13 00 00 00
+	    00 00 40 6C 06 0F 00 00
+		00 00 4C 53 01 02 02 00
+	</part>
+
+   </rom>	
+   <nvram index="4" size="29"/>	
+	
 </misterromdescription>

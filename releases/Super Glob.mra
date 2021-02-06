@@ -29,4 +29,22 @@
 		<part crc="77245b66" name="ic70.prm"/>
 		<part crc="1f617527" name="ic78.prm"/>
 	</rom>
+
+	<rom index="3" md5="none">
+    <part>
+	    00 00 4C 48 3C 4D 00 00
+	    00 00 4C B9 01 15 15 00
+	    00 00 4C 93 01 01 01 00
+	</part>
+
+   </rom>	
+   <nvram index="4" size="62"/>	
+<roma>		
+	@:maincpu,program,4c48,3c,4d,00
+@:maincpu,program,4cb9,1,15,15
+@:maincpu,program,4c93,1,01,01
+	@:maincpu,program,7c20,3c,00,00
+@:maincpu,program,7ca4,1,d8,d8
+@:maincpu,program,7c72,1,01,01
+</roma>
 </misterromdescription>

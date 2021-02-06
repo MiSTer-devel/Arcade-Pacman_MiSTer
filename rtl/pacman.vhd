@@ -88,6 +88,13 @@ port
 	dn_addr    : in  std_logic_vector(15 downto 0);
 	dn_data    : in  std_logic_vector(7 downto 0);
 	dn_wr      : in  std_logic;
+	
+	-- high score
+	ram_address: in  std_logic_vector(11 downto 0);
+	ram_data_hi   : out std_logic_vector(7 downto 0);
+	ram_data_in: in  std_logic_vector(7 downto 0);
+	ram_data_write:  in std_logic;
+
 	--
 	RESET      : in  std_logic;
 	CLK        : in  std_logic;
@@ -543,13 +550,18 @@ u_rams : work.dpram generic map (12,8)
 port map
 (
 	clock_a   => clk,
-	enable_a  => ena_6,
-	wren_a    => not sync_bus_r_w_l and not vram_l,
+--	enable_a  => ena_6,
+	wren_a    => not sync_bus_r_w_l and not vram_l and ena_6,
 	address_a => ab(11 downto 0),
 	data_a    => cpu_data_out, -- cpu only source of ram data
+	q_a       => ram_data,
 	clock_b   => clk,
-	address_b => ab(11 downto 0),
-	q_b       => ram_data
+	address_b => ram_address,
+   wren_b    => ram_data_write,
+	data_b    => ram_data_in,
+	q_b       => ram_data_hi
+
+	
 );
 
 ram2_we <= '1' when cpu_wr_l = '0' and cpu_mreq_l = '0' and cpu_rfsh_l = '1' else '0';

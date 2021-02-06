@@ -11,6 +11,7 @@ set_global_assignment -name VHDL_FILE rtl/sn76489/sn76489_latch_ctrl.vhd
 set_global_assignment -name VHDL_FILE rtl/sn76489/sn76489_clock_div.vhd
 set_global_assignment -name VHDL_FILE rtl/sn76489/sn76489_attenuator.vhd
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/ym2149.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/hiscore.sv
 set_global_assignment -name VHDL_FILE rtl/dpram.vhd
 set_global_assignment -name VHDL_FILE rtl/pacman_rom_descrambler.vhd
 set_global_assignment -name VHDL_FILE rtl/pacman_vram_addr.vhd

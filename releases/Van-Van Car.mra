@@ -39,4 +39,15 @@
 		<part crc="4b803d9f" name="6301-1.37"/>
 		<part crc="ce1d9503" name="6331-1.6"/>
 	</rom>
+	
+	<rom index="3" md5="none">
+    <part>
+	    00 00 48 09 06 00 00 00
+	    00 00 4C 60 F0 00 00 00
+	</part>
+
+   </rom>	
+   <nvram index="4" size="62"/>	
+
+	
 </misterromdescription>
