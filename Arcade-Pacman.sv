@@ -349,6 +349,9 @@ assign AUDIO_S = mod_van;
 wire [7:0] in0xor = mod_ponp ? 8'hE0 : 8'hFF;
 wire [7:0] in1xor = mod_ponp ? 8'h00 : 8'hFF;
 
+wire reset;
+assign reset = RESET | status[0] | buttons[1];
+
 pacman pacman
 (
 	.O_VIDEO_R(r),
@@ -406,39 +409,44 @@ pacman pacman
 	.h_offset(status[28:26]),
 	.v_offset(status[31:29]),
 
-	.RESET(RESET | status[0] | buttons[1]),
+	.RESET(reset),
 	.CLK(clk_sys),
 	.ENA_6(ce_6m),
 	.ENA_4(ce_4m),
 	.ENA_1M79(ce_1m79),
-	
-	
-	.ram_address(ram_address),
+
+	.ram_address(hs_address),
 	.ram_data_hi(ioctl_din),
-	.ram_data_in(hiscore_to_ram),
-	.ram_data_write(hiscore_write)
-	);
-
-
-
-wire [11:0]ram_address;
-wire [7:0]hiscore_to_ram;
-wire hiscore_write;
-
-hiscore hi (
-   .clk(clk_sys),
-   .ioctl_upload(ioctl_upload),
-   .ioctl_download(ioctl_download),
-   .ioctl_wr(ioctl_wr),
-   .ioctl_addr(ioctl_addr),
-   .ioctl_dout(ioctl_dout),
-   .ioctl_din(ioctl_din),
-   .ioctl_index(ioctl_index),
-   .ram_address(ram_address),
-	.data_to_ram(hiscore_to_ram),
-	.ram_write(hiscore_write)
+	.ram_data_in(hs_data_in),
+	.ram_data_write(hs_write)
 );
- 
+
+// HISCORE SYSTEM
+// --------------
+
+wire [11:0]hs_address;
+wire [7:0]hs_data_in;
+wire hs_write;
+wire hs_access;
+
+hiscore #(12) hi (
+	.clk(clk_sys),
+	.reset(reset),
+	.delay(1'b0),
+	.ioctl_upload(ioctl_upload),
+	.ioctl_download(ioctl_download),
+	.ioctl_wr(ioctl_wr),
+	.ioctl_addr(ioctl_addr),
+	.ioctl_dout(ioctl_dout),
+	.ioctl_din(ioctl_din),
+	.ioctl_index(ioctl_index),
+
+	.ram_address(hs_address),
+	.data_to_ram(hs_data_in),
+	.ram_write(hs_write),
+	.ram_access(hs_access)
+);
+
 
 endmodule
 
