@@ -88,7 +88,7 @@ port
 	dn_addr    : in  std_logic_vector(15 downto 0);
 	dn_data    : in  std_logic_vector(7 downto 0);
 	dn_wr      : in  std_logic;
-	
+
 	-- high score
 	ram_address: in  std_logic_vector(11 downto 0);
 	ram_data_hi   : out std_logic_vector(7 downto 0);
@@ -340,7 +340,7 @@ sync_bus_cs_l   <= '0' when cpu_mreq_l = '0' and cpu_rfsh_l = '1' and cpu_addr(1
 sync_bus_wreq_l <= '0' when sync_bus_cs_l = '0' and hcnt(1) = '1' and cpu_rd_l = '0' else '1';
 sync_bus_stb    <= '0' when sync_bus_cs_l = '0' and hcnt(1) = '0' else '1';
 sync_bus_r_w_l  <= '0' when sync_bus_stb  = '0' and cpu_rd_l = '1' else '1';
-  
+ 
 --
 -- sync bus custom ic
 --
@@ -526,7 +526,7 @@ begin
 		end if;
 	end if;
 end process;
-  
+ 
 
 inj <= in0(3 downto 0) when control_reg(5 downto 4) = "01" or mod_club = '0' else
        in1(3 downto 0) when control_reg(5 downto 4) = "10" else
@@ -561,7 +561,7 @@ port map
 	data_b    => ram_data_in,
 	q_b       => ram_data_hi
 
-	
+
 );
 
 ram2_we <= '1' when cpu_wr_l = '0' and cpu_mreq_l = '0' and cpu_rfsh_l = '1' else '0';
@@ -618,7 +618,7 @@ port map(
 	dn_data  => dn_data,
 	dn_wr    => dn_wr
 );
-	
+
 --
 -- video subsystem
 --
@@ -671,7 +671,7 @@ port map (
 	dn_addr       => dn_addr,
 	dn_data       => dn_data,
 	dn_wr         => dn_wr,
-	--		
+	--
 	O_AUDIO       => wav4u,
 	ENA_6         => ena_6,
 	CLK           => clk

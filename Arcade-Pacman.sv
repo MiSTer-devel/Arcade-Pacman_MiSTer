@@ -156,7 +156,7 @@ pll pll
 reg ce_6m;
 always @(posedge clk_sys) begin
 	reg [1:0] div;
-	
+
 	div <= div + 1'd1;
 	ce_6m <= !div;
 end
@@ -164,7 +164,7 @@ end
 reg ce_4m;
 always @(posedge clk_sys) begin
 	reg [2:0] div;
-	
+
 	div <= div + 1'd1;
 	if(div == 5) div <= 0;
 	ce_4m <= !div;
@@ -173,7 +173,7 @@ end
 reg ce_1m79;
 always @(posedge clk_sys) begin
 	reg [3:0] div;
-	
+
 	div <= div + 1'd1;
 	if(div == 12) div <= 0;
 	ce_1m79 <= !div;
@@ -251,7 +251,7 @@ wire mod_gm = mod_gork | mod_mrtnt;
 always @(posedge clk_sys) begin
 	reg [7:0] mod = 0;
 	if (ioctl_wr & (ioctl_index==1)) mod <= ioctl_dout;
-	
+
 	mod_orig <= (mod == 0);
 	mod_plus <= (mod == 1);
 	mod_club <= (mod == 2);
@@ -331,7 +331,7 @@ arcade_video #(288,8) arcade_video
 	.HSync(hs),
 	.VSync(vs),
 
-	.fx(status[5:3])
+	.fx(status[5:3]),
 );
 
 wire no_rotate = status[2] | direct_video | mod_ponp;
@@ -363,26 +363,26 @@ pacman pacman
 	.O_AUDIO(audio),
 
 	.in0(sw[0] & (in0xor ^ {
-									mod_eeek & m_fire_2,
-									mod_alib & m_fire,
-									m_coin,
-									((mod_orig | mod_plus | mod_ms | mod_bird | mod_alib | mod_woodp) & m_cheat) | ((mod_ponp | mod_van | mod_dshop) & m_fire),
-									m_down,
-									m_right,
-									m_left,
-									m_up
-								})),
+		mod_eeek & m_fire_2,
+		mod_alib & m_fire,
+		m_coin,
+		((mod_orig | mod_plus | mod_ms | mod_bird | mod_alib | mod_woodp) & m_cheat) | ((mod_ponp | mod_van | mod_dshop) & m_fire),
+		m_down,
+		m_right,
+		m_left,
+		m_up
+	})),
 
 	.in1(sw[1] & (in1xor ^ {
-									mod_gm & m_fire_2,
-									m_start_2 | (mod_eeek & m_fire) | (mod_jmpst & m_fire_2),
-									m_start   | (mod_jmpst & m_fire),
-									(mod_gm & m_fire) | ((mod_alib | mod_ponp | mod_van | mod_dshop) & m_fire_2),
-									~mod_pmm & m_down_2,
-									mod_pmm ? m_fire : m_right_2,
-									~mod_pmm & m_left_2,
-									~mod_pmm & m_up_2
-								})),
+		mod_gm & m_fire_2,
+		m_start_2 | (mod_eeek & m_fire) | (mod_jmpst & m_fire_2),
+		m_start   | (mod_jmpst & m_fire),
+		(mod_gm & m_fire) | ((mod_alib | mod_ponp | mod_van | mod_dshop) & m_fire_2),
+		~mod_pmm & m_down_2,
+		mod_pmm ? m_fire : m_right_2,
+		~mod_pmm & m_left_2,
+		~mod_pmm & m_up_2
+	})),
 	.dipsw1(sw[2]),
 	.dipsw2((mod_ponp | mod_van | mod_dshop) ? sw[3] : 8'hFF),
 
@@ -451,15 +451,15 @@ wire [3:0] innew = in1 & ~in2;
 assign outdir = in1 & mask;
 
 always @(posedge clk) begin
-	
+
 	in1 <= indir;
 	in2 <= in1;
-	
+
 	if(innew[0]) mask <= 1;
 	if(innew[1]) mask <= 2;
 	if(innew[2]) mask <= 4;
 	if(innew[3]) mask <= 8;
-	
+
 	if(!(indir & mask) || dis) mask <= '1;
 end
 
