@@ -72,7 +72,9 @@ port (
 	MRTNT             : in    std_logic := '0';  -- 1 to descramble Mr TNT ROMs, 0 otherwise
 	PONP              : in    std_logic := '0';
 	ENA_6             : in    std_logic;
-	CLK               : in    std_logic
+	CLK               : in    std_logic;
+
+	flip_screen       : in    std_logic
 );
 end;
 
@@ -80,6 +82,7 @@ architecture RTL of PACMAN_VIDEO is
 
 	signal sprite_xy_ram_temp : std_logic_vector(7 downto 0);
 	signal dr                 : std_logic_vector(7 downto 0);
+	signal xy                 : std_logic_vector(7 downto 0);
 
 	signal char_reg           : std_logic_vector(7 downto 0);
 	signal char_sum_reg       : std_logic_vector(3 downto 0);
@@ -133,10 +136,13 @@ begin
 	prom_cs <= '1' when dn_addr(15 downto 14) = "11" else '0';
 	gfx_cs  <= '1' when dn_addr(15 downto 13) = "100" else '0';
 
+	-- invert sprite position when flip_screen mode is enabled. offset x positions
+	xy <= not sprite_xy_ram_temp when flip_screen = '0' else sprite_xy_ram_temp - 19 when I_AB(0) = '1' else sprite_xy_ram_temp - 15 + to_integer(unsigned'("" & (not (I_AB(1) and I_AB(2)) xor I_AB(3)) & "0"));
+
 	-- ram enable is low when HBLANK_L is 0 (for sprite access) or
 	-- 2H is low (for cpu writes)
 	-- we can simplify this
-	dr <= not sprite_xy_ram_temp when I_HBLANK = '1' else "11111111"; -- pull ups on board
+	dr <= xy when I_HBLANK = '1' else "11111111"; -- pull ups on board
 
 	sprite_xy_ram : work.dpram generic map (4,8)
 	port map
@@ -187,8 +193,8 @@ begin
 			xflip     <= I_FLIP;
 			yflip     <= I_FLIP;
 		else
-			xflip     <= db_reg(1);
-			yflip     <= db_reg(0);
+			xflip     <= db_reg(1) xor flip_screen;
+			yflip     <= db_reg(0) xor flip_screen;
 		end if;
 	end process;
 
