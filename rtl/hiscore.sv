@@ -98,7 +98,7 @@ reg       downloading_dump;
 reg       uploading_dump;
 reg       downloaded_config = 1'b0;
 reg       downloaded_dump = 1'b0;
-reg       uploaded_dump = 1'b0;
+//reg       uploaded_dump = 1'b0;
 reg [3:0] initialised;
 
 assign downloading_config = ioctl_download && (ioctl_index==HS_CONFIGINDEX);
@@ -234,7 +234,7 @@ begin
     begin
         if (last_ioctl_index==HS_DUMPINDEX)
         begin
-            uploaded_dump <= 1'b1;
+            //uploaded_dump <= 1'b1;
             // Mark uploaded dump as readable in case of reset
             downloaded_dump <= 1'b1;
         end

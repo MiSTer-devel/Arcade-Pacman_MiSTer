@@ -187,7 +187,7 @@ begin
 		end if;
 	end process;
 
-	p_flip_comb : process(char_hblank_reg, I_FLIP, db_reg)
+	p_flip_comb : process(char_hblank_reg, I_FLIP, db_reg, flip_screen)
 	begin
 		if (char_hblank_reg = '0') then
 			xflip     <= I_FLIP;
