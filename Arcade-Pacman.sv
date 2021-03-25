@@ -205,6 +205,7 @@ localparam CONF_STR = {
 	"R0,Reset;",
 	"J1,Fire,Start 1P,Start 2P,Coin,Cheat;",
 	"jn,A,Start,Select,R,L;",
+	"DEFMRA,Puck Man (Japan set 1).mra;", // default MRA to be used when core is uploaded by USB blaster (debug)
 	"V,v",`BUILD_DATE
 };
 
