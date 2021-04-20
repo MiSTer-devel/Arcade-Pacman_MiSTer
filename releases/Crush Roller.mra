@@ -48,13 +48,11 @@
 		<part crc="2fc650bd" name="82s123.7f"/>
 	</rom>
 	<rom index="3" md5="none">
-    <part>
-	    00 00 43 D2 02 49 48 00
-	    00 00 4C 80 03 00 00 00
-	</part>
-
-   </rom>	
-   <nvram index="4" size="5"/>		
-	
-	
+		<part>
+		00 00 00 00 00 FF 00 02 00 02 00 01 00 FF 00 00
+		00 00 43 D2 00 02 49 48
+		00 00 4C 80 00 03 00 00
+		</part>
+	</rom>
+	<nvram index="4" size="5"/>
 </misterromdescription>

@@ -93,11 +93,14 @@ port
 	dn_data    : in  std_logic_vector(7 downto 0);
 	dn_wr      : in  std_logic;
 
+	pause      : in  std_logic;
+
 	-- high score
-	ram_address: in  std_logic_vector(11 downto 0);
-	ram_data_hi   : out std_logic_vector(7 downto 0);
-	ram_data_in: in  std_logic_vector(7 downto 0);
-	ram_data_write:  in std_logic;
+	hs_address  : in  std_logic_vector(11 downto 0);
+	hs_data_in  : in  std_logic_vector(7 downto 0);
+	hs_data_out : out std_logic_vector(7 downto 0);
+	hs_write    : in  std_logic;
+	hs_access   : in  std_logic;
 
 	--
 	RESET      : in  std_logic;
@@ -305,6 +308,8 @@ begin
 			watchdog_cnt <= X"FF";
 		elsif (iodec_wdr_l = '0') then
 			watchdog_cnt <= X"00";
+		elsif (pause = '1') then
+			watchdog_cnt <= X"00";
 		elsif rising_vblank then
 			watchdog_cnt <= watchdog_cnt + "1";
 		end if;
@@ -321,7 +326,7 @@ port map (
 	RESET_n => watchdog_reset_l and (not reset),
 	CLK_n   => clk,
 	CLKEN   => hcnt(0) and ena_6,
-	WAIT_n  => sync_bus_wreq_l,
+	WAIT_n  => sync_bus_wreq_l and (not pause),
 	INT_n   => cpu_int_l or     mod_van,
 	NMI_n   => cpu_int_l or not mod_van,
 	BUSRQ_n => '1',
@@ -562,10 +567,11 @@ port map
 	data_a    => cpu_data_out, -- cpu only source of ram data
 	q_a       => ram_data,
 	clock_b   => clk,
-	address_b => ram_address,
-   wren_b    => ram_data_write,
-	data_b    => ram_data_in,
-	q_b       => ram_data_hi
+	address_b => hs_address,
+   enable_b  => hs_access,
+	wren_b    => hs_write,
+	data_b    => hs_data_in,
+	q_b       => hs_data_out
 
 
 );
@@ -680,7 +686,7 @@ port map (
 	dn_wr         => dn_wr,
 	--
 	O_AUDIO       => wav4u,
-	ENA_6         => ena_6,
+	ENA_6         => ena_6 and (not pause),
 	CLK           => clk
 );
 
