@@ -184,6 +184,7 @@ assign LED_DISK  = 0;
 assign LED_POWER = 0;
 assign BUTTONS   = 0;
 assign AUDIO_MIX = 0;
+assign FB_FORCE_BLANK = 0;
 
 wire [1:0] ar = status[15:14];
 
@@ -200,11 +201,15 @@ localparam CONF_STR = {
 	"OQS,CRT H-sync Adjust,0,1,2,3,4,5,6,7;",
 	"OTV,CRT V-sync Adjust,0,1,2,3,4,5,6,7;",
 	"-;",
+	"P1,Pause options;",
+	"P1OP,Pause when OSD is open,On,Off;",
+	"P1OQ,Dim video after 10s,On,Off;",
+	"-;",
 	"DIP;",
 	"-;",
 	"R0,Reset;",
-	"J1,Fire,Start 1P,Start 2P,Coin,Cheat;",
-	"jn,A,Start,Select,R,L;",
+	"J1,Fire,Start 1P,Start 2P,Coin,Cheat,Pause;",
+	"jn,A,Start,Select,R,L,X;",
 	"DEFMRA,Puck Man (Japan set 1).mra;", // default MRA to be used when core is uploaded by USB blaster (debug)
 	"V,v",`BUILD_DATE
 };
@@ -377,8 +382,18 @@ wire m_fire_2   = joy2[4];
 wire m_start    = joy1[5] | joy2[5];
 wire m_start_2  = joy1[6] | joy2[6];
 wire m_coin     = joy1[7] | joy2[7];
-
 wire m_cheat    = joy1[8] | joy2[8];
+wire m_pause    = joy1[9] | joy2[9];
+
+// PAUSE SYSTEM
+wire				pause_cpu;
+wire [7:0]		rgb_out;
+pause #(3,3,2,24) pause (
+	.*,
+	.user_button(m_pause),
+	.pause_request(hs_pause),
+	.options(~status[26:25])
+);
 
 wire hblank, vblank;
 wire ce_vid = ce_6m;
@@ -393,7 +408,7 @@ arcade_video #(288,8) arcade_video
 	.clk_video(clk_vid),
 	.ce_pix(ce_vid),
 
-	.RGB_in({r,g,b}),
+	.RGB_in(rgb_out),
 	.HBlank(hblank),
 	.VBlank(vblank),
 	.HSync(hs),
@@ -480,10 +495,13 @@ pacman pacman
 	.ENA_4(ce_4m),
 	.ENA_1M79(ce_1m79),
 
-	.ram_address(hs_address),
-	.ram_data_hi(ioctl_din),
-	.ram_data_in(hs_data_in),
-	.ram_data_write(hs_write)
+	.pause(pause_cpu),
+
+	.hs_address(hs_address),
+	.hs_data_in(hs_data_in),
+	.hs_data_out(ioctl_din),
+	.hs_write(hs_write),
+	.hs_access(hs_access)
 );
 
 // HISCORE SYSTEM
@@ -493,11 +511,15 @@ wire [11:0]hs_address;
 wire [7:0]hs_data_in;
 wire hs_write;
 wire hs_access;
+wire hs_pause;
 
-hiscore #(12) hi (
+hiscore #(
+	.HS_ADDRESSWIDTH(12),
+	.CFG_ADDRESSWIDTH(3),
+	.CFG_LENGTHWIDTH(2)
+) hi (
 	.clk(clk_sys),
 	.reset(reset),
-	.delay(1'b0),
 	.ioctl_upload(ioctl_upload),
 	.ioctl_download(ioctl_download),
 	.ioctl_wr(ioctl_wr),
@@ -509,7 +531,8 @@ hiscore #(12) hi (
 	.ram_address(hs_address),
 	.data_to_ram(hs_data_in),
 	.ram_write(hs_write),
-	.ram_access(hs_access)
+	.ram_access(hs_access),
+	.pause_cpu(hs_pause)
 );
 
 
