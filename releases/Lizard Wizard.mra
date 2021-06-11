@@ -57,10 +57,16 @@
 		<part crc="7549a947" name="7f.cpu"></part>
 		</rom>
 	<rom index="2"></rom>
-	<rom index="3"></rom>
+	<rom index="3" md5="none">
+		<part>
+		00 00 00 00 00 FF 00 02 00 02 00 01 00 FF 00 00
+		00 00 4D AF 00 3C 4D 01
+		00 00 43 ED 00 06 00 40
+		</part>
+	</rom>
 	<rom index="4"></rom>
 
-	<nvram></nvram>
+	<nvram index="4" size="66"/>
 
 	<remark></remark>
 
