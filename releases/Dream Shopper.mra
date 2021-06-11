@@ -58,10 +58,17 @@
 		<part crc="ce1d9503" name="6331-1.6"></part>
 		</rom>
 	<rom index="2"></rom>
-	<rom index="3"></rom>
+	<rom index="3" md5="none">
+		<part>
+		00 00 00 00 00 FF 00 02 00 02 00 01 00 FF 00 00
+		00 00 4C 00 00 F0 00 01
+		00 00 48 08 00 06 00 00
+		00 00 48 09 00 01 03 03
+		</part>
+	</rom>
 	<rom index="4"></rom>
 
-	<nvram></nvram>
+	<nvram index="4" size="247"/>
 
 	<remark></remark>
 

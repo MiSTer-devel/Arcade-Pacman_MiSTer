@@ -55,10 +55,18 @@
 		<part crc="2fc650bd" name="n82s123n.7f"></part>
 		</rom>
 	<rom index="2"></rom>
-	<rom index="3"></rom>
+	<rom index="3" md5="none">
+		<part>
+		00 00 00 00 00 FF 00 02 00 02 00 01 00 FF 00 00
+		00 00 4E 88 00 04 00 00
+		00 00 43 ED 00 06 40 40
+		00 00 43 D1 00 01 59 59
+		00 00 43 CB 00 0A 4F 4D
+		</part>
+	</rom>
 	<rom index="4"></rom>
 
-	<nvram></nvram>
+	<nvram index="4" size="20"/>
 
 	<remark></remark>
 
