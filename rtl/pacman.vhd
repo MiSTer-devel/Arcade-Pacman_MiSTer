@@ -96,11 +96,12 @@ port
 	pause      : in  std_logic;
 
 	-- high score
-	hs_address  : in  std_logic_vector(11 downto 0);
-	hs_data_in  : in  std_logic_vector(7 downto 0);
-	hs_data_out : out std_logic_vector(7 downto 0);
-	hs_write    : in  std_logic;
-	hs_access   : in  std_logic;
+	hs_address      : in  std_logic_vector(11 downto 0);
+	hs_data_in      : in  std_logic_vector(7 downto 0);
+	hs_data_out     : out std_logic_vector(7 downto 0);
+	hs_write_enable : in  std_logic;
+	hs_access_read  : in  std_logic;
+	hs_access_write : in  std_logic;
 
 	--
 	RESET      : in  std_logic;
@@ -556,20 +557,19 @@ cpu_data_in <=	cpu_vec_reg               when cpu_iorq_l = '0' and cpu_m1_l = '0
                x"BF"                     when iodec_nop_l   = '0'   else
                ram_data;
 
-
 u_rams : work.dpram generic map (12,8)
 port map
 (
 	clock_a   => clk,
 --	enable_a  => ena_6,
-	wren_a    => not sync_bus_r_w_l and not vram_l and ena_6,
+	wren_a    => not sync_bus_r_w_l and not vram_l and ena_6 and not (hs_access_read or hs_access_write),
 	address_a => ab(11 downto 0),
 	data_a    => cpu_data_out, -- cpu only source of ram data
 	q_a       => ram_data,
 	clock_b   => clk,
 	address_b => hs_address,
-   enable_b  => hs_access,
-	wren_b    => hs_write,
+   enable_b  => hs_access_read or hs_access_write,
+	wren_b    => hs_write_enable,
 	data_b    => hs_data_in,
 	q_b       => hs_data_out
 

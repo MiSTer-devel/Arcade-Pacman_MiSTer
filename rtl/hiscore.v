@@ -30,6 +30,13 @@
  0005 - 2021-03-18 -	Add configurable score table width, clean up some stupid mistakes
  0006 - 2021-03-27 -	Move 'tweakable' parameters into MRA data header
  0007 - 2021-04-15 -	Improve state machine maintainability, add new 'pause padding' states
+ 0008 - 2021-05-12 -	Feed back core-level pause to halt startup timer
+ 0009 - 2021-07-31 -	Split hiscore extraction from upload (updates hiscore buffer on OSD open)
+ 0010 - 2021-08-03 -	Add hiscore buffer and change detection (ready for autosave!)
+ 0011 - 2021-08-07 -	Optional auto-save on OSD open
+ 0012 - 2021-08-17 -	Add variable length change detection mask
+ 0013 - 2021-09-01 -	Output configured signal for autosave option menu masking
+ 0014 - 2021-09-09 -	Fix turning on autosave w/o core reload 
 ============================================================================
 */
 
@@ -44,21 +51,28 @@ module hiscore
 )
 (
 	input										clk,
+	input										paused,			// Signal from core confirming CPU is paused
 	input										reset,
+	input										autosave,		// Auto-save enabled (active high)
 
 	input										ioctl_upload,
+	output reg								ioctl_upload_req,
 	input										ioctl_download,
 	input										ioctl_wr,
 	input		[24:0]						ioctl_addr,
-	input		[7:0]							ioctl_dout,
-	input		[7:0]							ioctl_din,
 	input		[7:0]							ioctl_index,
+	input										OSD_STATUS,
 
-	output	[HS_ADDRESSWIDTH-1:0]	ram_address,	// Address in game RAM to read/write score data
-	output	[7:0]							data_to_ram,	// Data to write to game RAM
-	output	reg							ram_write,		// Write to game RAM (active high)
-	output									ram_access,		// RAM read or write required (active high)
-	output	reg							pause_cpu		// Pause core CPU to prepare for/relax after RAM access
+	input		[7:0]							data_from_hps,		// Incoming data from HPS ioctl_dout
+	input		[7:0]							data_from_ram,		// Incoming data from game RAM
+	output	[HS_ADDRESSWIDTH-1:0]	ram_address,		// Address in game RAM to read/write score data
+	output	[7:0]							data_to_hps,		// Data to send to HPS ioctl_din
+	output	[7:0]							data_to_ram,		// Data to send to game RAM
+	output	reg							ram_write,			// Write to game RAM (active high)
+	output									ram_intent_read,	// RAM read required (active high)
+	output									ram_intent_write,	// RAM write required (active high)
+	output	reg							pause_cpu,			// Pause core CPU to prepare for/relax after RAM access
+	output									configured			// Hiscore module has valid configuration (active high)
 );
 
 // Parameters read from config header
@@ -68,13 +82,13 @@ reg [15:0]	CHECK_HOLD			=16'd2;		// Hold time for start/end check reads
 reg [15:0]	WRITE_HOLD			=16'd2;		// Hold time for game RAM writes 
 reg [15:0]	WRITE_REPEATCOUNT	=16'b1;		// Number of times to write score to game RAM
 reg [15:0]	WRITE_REPEATWAIT	=16'b1111;	// Delay between subsequent write attempts to game RAM
-reg [7:0]	ACCESS_PAUSEPAD		=8'd4;		// Cycles to wait with paused CPU before and after RAM access
-
+reg [7:0]	ACCESS_PAUSEPAD	=8'd4;		// Cycles to wait with paused CPU before and after RAM access
+reg [7:0]	CHANGEMASK			=1'b0;		// Length of change mask
 
 // State machine constants
-localparam SM_STATEWIDTH	 = 4;				// Width of state machine net
+localparam SM_STATEWIDTH	 = 5;				// Width of state machine net
 
-localparam SM_INIT			 = 0;
+localparam SM_INIT_RESTORE	 = 0;
 localparam SM_TIMER			 = 1;
 
 localparam SM_CHECKPREP		 = 2;
@@ -90,7 +104,19 @@ localparam SM_WRITEDONE		 = 10;
 localparam SM_WRITECOMPLETE = 11;
 localparam SM_WRITERETRY	 = 12;
 
-localparam SM_STOPPED		 = 13;
+localparam SM_COMPAREINIT	 = 16;
+localparam SM_COMPAREBEGIN	 = 17;
+localparam SM_COMPAREREADY	 = 18;
+localparam SM_COMPAREREAD	 = 19;
+localparam SM_COMPAREDONE	 = 20;
+localparam SM_COMPARECOMPLETE	 = 21;
+
+localparam SM_EXTRACTINIT	 = 22;
+localparam SM_EXTRACT		 = 23;
+localparam SM_EXTRACTSAVE	 = 24;
+localparam SM_EXTRACTCOMPLETE	 = 25;
+
+localparam SM_STOPPED		 = 30;
 
 /*
 Hiscore config data structure (version 1)
@@ -107,7 +133,8 @@ Hiscore config data structure (version 1)
 2 byte		WRITE_HOLD
 2 byte		WRITE_REPEATCOUNT
 2 byte		WRITE_REPEATWAIT
-2 byte		(padding/future use)
+1 byte		ACCESS_PAUSEPAD
+1 byte		CHANGEMASK
 
 - Entry format (when CFG_LENGTHWIDTH=1)
 00 00 43 0b  0f    10  01  00
@@ -132,77 +159,100 @@ Hiscore config data structure (version 1)
 
 */
 
-localparam HS_VERSION			=7;			// Version identifier for module
+localparam HS_VERSION			=14;			// Version identifier for module
 localparam HS_DUMPFORMAT		=1;			// Version identifier for dump format
 localparam HS_HEADERLENGTH		=16;			// Size of header chunk (default=16 bytes)
 
 // HS_DUMPFORMAT = 1 --> No header, just the extracted hiscore data
 
-// Hiscore config and dump status 
-wire				downloading_config;
-wire				parsing_header;
-wire				downloading_dump;
-wire				uploading_dump;
-reg				downloaded_config = 1'b0;
-reg				downloaded_dump = 1'b0;
-reg				uploaded_dump = 1'b0;
-reg	[3:0]		initialised;
-reg				writing_scores = 1'b0;
-reg				checking_scores = 1'b0;
+// Hiscore config tracking 
+wire				downloading_config;				// Is hiscore configuration currently being loaded from HPS?
+reg				downloaded_config = 1'b0;			// Has hiscore configuration been loaded successfully
+wire				parsing_header;					// Is hiscore configuration header currently being parsed?
+wire				parsing_mask;					// Is hiscore configuration change mask currently being parsed? (optional 2nd line of config)
 
+// Hiscore data tracking
+wire				downloading_dump;				// Is hiscore data currently being loaded from HPS?
+reg				downloaded_dump = 1'b0;				// Has hiscore data been loaded successfully
+wire				uploading_dump;					// Is hiscore data currently being sent to HPS?
+reg				extracting_dump = 1'b0;				// Is hiscore data currently being extracted from game RAM?
+reg				restoring_dump = 1'b0;				// Is hiscore data currently being (or waiting to) restore to game RAM
+
+reg				checking_scores = 1'b0;				// Is state machine currently checking game RAM for highscore restore readiness
+reg				reading_scores = 1'b0;				// Is state machine currently reading game RAM for highscore dump
+reg				writing_scores = 1'b0;				// Is state machine currently restoring hiscore data to game RAM
+
+reg	[3:0]		initialised;						// Number of times state machine has been initialised (debug only)
+
+assign configured = downloaded_config;
 assign downloading_config = ioctl_download && (ioctl_index==HS_CONFIGINDEX);
-assign parsing_header = downloading_config && (ioctl_addr<=HS_HEADERLENGTH);
+assign parsing_header = downloading_config && (ioctl_addr<HS_HEADERLENGTH);
+assign parsing_mask = downloading_config && !parsing_header && (CHANGEMASK > 8'b0) && (ioctl_addr < HS_HEADERLENGTH + CHANGEMASK);
 assign downloading_dump = ioctl_download && (ioctl_index==HS_DUMPINDEX);
 assign uploading_dump = ioctl_upload && (ioctl_index==HS_DUMPINDEX);
-assign ram_access = uploading_dump | writing_scores | checking_scores;
+assign ram_intent_read = reading_scores | checking_scores;
+assign ram_intent_write = writing_scores;
 assign ram_address = ram_addr[HS_ADDRESSWIDTH-1:0];
 
-reg	[(SM_STATEWIDTH-1):0]		state = SM_INIT;			// Current state machine index
-reg	[(SM_STATEWIDTH-1):0]		next_state = SM_INIT;	// Next state machine index to move to after wait timer expires
-reg	[31:0]							wait_timer;					// Wait timer for inital/read/write delays
+reg	[(SM_STATEWIDTH-1):0]		state = SM_INIT_RESTORE;			// Current state machine index
+reg	[(SM_STATEWIDTH-1):0]		next_state = SM_INIT_RESTORE;		// Next state machine index to move to after wait timer expires
+reg	[31:0]							wait_timer;								// Wait timer for inital/read/write delays
 
 reg	[CFG_ADDRESSWIDTH-1:0]		counter = 1'b0;			// Index for current config table entry
 reg	[CFG_ADDRESSWIDTH-1:0]		total_entries = 1'b0;	// Total count of config table entries
 reg										reset_last = 1'b0;		// Last cycle reset
 reg	[7:0]								write_counter = 1'b0;	// Index of current game RAM write attempt
 
+reg	[255:0]							change_mask;				// Bit mask for dump change check
+
 reg	[7:0]								last_ioctl_index;			// Last cycle HPS IO index
 reg										last_ioctl_download = 0;// Last cycle HPS IO download
-reg										last_ioctl_upload = 0;	// Last cycle HPS IO upload
-reg	[7:0]								last_ioctl_dout;			// Last cycle HPS IO data out
-reg	[7:0]								last_ioctl_dout2;			// Last cycle +1 HPS IO data out
-reg	[7:0]								last_ioctl_dout3;			// Last cycle +2 HPS IO data out
+reg	[7:0]								last_data_from_hps;		// Last cycle HPS IO data out
+reg	[7:0]								last_data_from_hps2;		// Last cycle +1 HPS IO data out
+reg	[7:0]								last_data_from_hps3;		// Last cycle +2 HPS IO data out
+reg										last_OSD_STATUS;			// Last cycle OSD status
 
 reg	[24:0]							ram_addr;					// Target RAM address for hiscore read/write
-reg	[24:0]							old_io_addr;
 reg	[24:0]							base_io_addr;
-wire	[23:0]							addr_base;
+wire	[23:0]							addr_base /* synthesis keep */;
 wire	[(CFG_LENGTHWIDTH*8)-1:0]	length;
 wire	[24:0]							end_addr = (addr_base + length - 1'b1);
-reg	[HS_SCOREWIDTH-1:0]			local_addr;
-wire	[7:0]								start_val;
-wire	[7:0]								end_val;
+reg	[HS_SCOREWIDTH-1:0]			data_addr;
+reg	[HS_SCOREWIDTH-1:0]			buffer_addr;
+wire	[7:0]								start_val /* synthesis keep */;
+wire	[7:0]								end_val /* synthesis keep */;
+
+wire  [7:0]								hiscore_data_out /* synthesis keep */;
+reg										dump_write = 1'b0;
+wire  [7:0]								hiscore_buffer_out /* synthesis keep */;
+reg										buffer_write = 1'b0;
+reg	[19:0]							compare_length = 1'b0;
+reg										compare_nonzero = 1'b1;	// High after extract and compare if any byte returned is non-zero
+reg										compare_changed = 1'b1;	// High after extract and compare if any byte is different to current hiscore data
+wire										check_mask = change_mask[compare_length]/* synthesis keep */;
+reg										dump_dirty = 1'b0;		// High if dump has changed since last save (or first load if no save has occurred)
 
 wire [23:0]								address_data_in;
 wire [(CFG_LENGTHWIDTH*8)-1:0]	length_data_in;
 
-assign address_data_in = {last_ioctl_dout2, last_ioctl_dout, ioctl_dout};
-assign length_data_in = (CFG_LENGTHWIDTH == 1'b1) ? ioctl_dout : {last_ioctl_dout, ioctl_dout};
+assign address_data_in = {last_data_from_hps2, last_data_from_hps, data_from_hps};
+assign length_data_in = (CFG_LENGTHWIDTH == 1'b1) ? data_from_hps : {last_data_from_hps, data_from_hps};
 
-wire address_we = downloading_config & ~parsing_header & (ioctl_addr[2:0] == 3'd3);
-wire length_we = downloading_config & ~parsing_header & (ioctl_addr[2:0] == 3'd3 + CFG_LENGTHWIDTH);
-wire startdata_we = downloading_config & ~parsing_header & (ioctl_addr[2:0] == 3'd4 + CFG_LENGTHWIDTH); 
-wire enddata_we = downloading_config & ~parsing_header & (ioctl_addr[2:0] == 3'd5 + CFG_LENGTHWIDTH);
+wire parsing_config = ~(parsing_header | parsing_mask); // Hiscore config lines are being parsed
+
+wire [CFG_ADDRESSWIDTH-1:0] config_upload_addr = ioctl_addr[CFG_ADDRESSWIDTH+2:3] - (9'd2 + CHANGEMASK[7:3]) /* synthesis keep */;
+
+wire address_we = downloading_config & parsing_config & (ioctl_addr[2:0] == 3'd3);
+wire length_we = downloading_config & parsing_config & (ioctl_addr[2:0] == 3'd3 + CFG_LENGTHWIDTH);
+wire startdata_we = downloading_config & parsing_config & (ioctl_addr[2:0] == 3'd4 + CFG_LENGTHWIDTH); 
+wire enddata_we = downloading_config & parsing_config & (ioctl_addr[2:0] == 3'd5 + CFG_LENGTHWIDTH);
 
 // RAM chunks used to store configuration data
-// - address_table
-// - length_table
-// - startdata_table
-// - enddata_table
+// - Address table
 dpram_hs #(.aWidth(CFG_ADDRESSWIDTH),.dWidth(24))
 address_table(
 	.clk(clk),
-	.addr_a(ioctl_addr[CFG_ADDRESSWIDTH+2:3] - 2'd2),
+	.addr_a(config_upload_addr),
 	.we_a(address_we & ioctl_wr),
 	.d_a(address_data_in),
 	.addr_b(counter),
@@ -212,45 +262,61 @@ address_table(
 dpram_hs #(.aWidth(CFG_ADDRESSWIDTH),.dWidth(CFG_LENGTHWIDTH*8))
 length_table(
 	.clk(clk),
-	.addr_a(ioctl_addr[CFG_ADDRESSWIDTH+2:3] - 2'd2),
+	.addr_a(config_upload_addr),
 	.we_a(length_we & ioctl_wr),
 	.d_a(length_data_in),
 	.addr_b(counter),
 	.q_b(length)
 );
+// - Start data table
 dpram_hs #(.aWidth(CFG_ADDRESSWIDTH),.dWidth(8))
 startdata_table(
 	.clk(clk),
-	.addr_a(ioctl_addr[CFG_ADDRESSWIDTH+2:3] - 2'd2),
+	.addr_a(config_upload_addr),
 	.we_a(startdata_we & ioctl_wr), 
-	.d_a(ioctl_dout),
+	.d_a(data_from_hps),
 	.addr_b(counter),
 	.q_b(start_val)
 );
+// - End data table
 dpram_hs #(.aWidth(CFG_ADDRESSWIDTH),.dWidth(8))
 enddata_table(
 	.clk(clk),
-	.addr_a(ioctl_addr[CFG_ADDRESSWIDTH+2:3] - 2'd2),
+	.addr_a(config_upload_addr),
 	.we_a(enddata_we & ioctl_wr),
-	.d_a(ioctl_dout),
+	.d_a(data_from_hps),
 	.addr_b(counter),
 	.q_b(end_val)
 );
 
-// RAM chunk used to store hiscore data
+// RAM chunk used to store valid hiscore data 
 dpram_hs #(.aWidth(HS_SCOREWIDTH),.dWidth(8))
-hiscoredata (
+hiscore_data (
 	.clk(clk),
 	.addr_a(ioctl_addr[(HS_SCOREWIDTH-1):0]),
 	.we_a(downloading_dump),
-	.d_a(ioctl_dout),
-	.addr_b(local_addr),
-	.we_b(ioctl_upload), 
-	.d_b(ioctl_din),
-	.q_b(data_to_ram)
+	.d_a(data_from_hps),
+	.addr_b(data_addr),
+	.we_b(dump_write), 
+	.d_b(hiscore_buffer_out),
+	.q_b(hiscore_data_out)
+);
+// RAM chunk used to store temporary high score data
+dpram_hs #(.aWidth(HS_SCOREWIDTH),.dWidth(8))
+hiscore_buffer (
+	.clk(clk),
+	.addr_a(buffer_addr),
+	.we_a(buffer_write),
+	.d_a(data_from_ram),
+	.q_a(hiscore_buffer_out)
 );
 
+assign data_to_ram = hiscore_data_out;
+assign data_to_hps = hiscore_data_out;
+
 wire [3:0] header_chunk = ioctl_addr[3:0];
+wire [7:0] mask_chunk = ioctl_addr[7:0] - 5'd16;
+wire [255:0] mask_load_index = mask_chunk * 8;
 
 always @(posedge clk)
 begin
@@ -262,19 +328,25 @@ begin
 		begin
 			if(ioctl_wr)
 			begin
-				if(header_chunk == 4'd3) START_WAIT <= { last_ioctl_dout3, last_ioctl_dout2, last_ioctl_dout, ioctl_dout };
-				if(header_chunk == 4'd5) CHECK_WAIT <= { last_ioctl_dout, ioctl_dout };
-				if(header_chunk == 4'd7) CHECK_HOLD <= { last_ioctl_dout, ioctl_dout };
-				if(header_chunk == 4'd9) WRITE_HOLD <= { last_ioctl_dout, ioctl_dout };
-				if(header_chunk == 4'd11) WRITE_REPEATCOUNT <= { last_ioctl_dout, ioctl_dout };
-				if(header_chunk == 4'd13) WRITE_REPEATWAIT <= { last_ioctl_dout, ioctl_dout };
-				if(header_chunk == 4'd14) ACCESS_PAUSEPAD <= ioctl_dout;
+				if(header_chunk == 4'd3) START_WAIT <= { last_data_from_hps3, last_data_from_hps2, last_data_from_hps, data_from_hps };
+				if(header_chunk == 4'd5) CHECK_WAIT <= { last_data_from_hps, data_from_hps };
+				if(header_chunk == 4'd7) CHECK_HOLD <= { last_data_from_hps, data_from_hps };
+				if(header_chunk == 4'd9) WRITE_HOLD <= { last_data_from_hps, data_from_hps };
+				if(header_chunk == 4'd11) WRITE_REPEATCOUNT <= { last_data_from_hps, data_from_hps };
+				if(header_chunk == 4'd13) WRITE_REPEATWAIT <= { last_data_from_hps, data_from_hps };
+				if(header_chunk == 4'd14) ACCESS_PAUSEPAD <= data_from_hps;
+				if(header_chunk == 4'd15) CHANGEMASK <= data_from_hps;
 			end
+		end
+		else
+		if(parsing_mask)
+		begin
+			if(ioctl_wr == 1'b1) change_mask[mask_load_index +: 8] <= data_from_hps;
 		end
 		else
 		begin
 			// Keep track of the largest entry during config download
-			total_entries <= ioctl_addr[CFG_ADDRESSWIDTH+2:3] - 2'd2;
+			total_entries <= config_upload_addr;
 		end
 	end
 
@@ -285,71 +357,214 @@ begin
 		if (last_ioctl_index==HS_DUMPINDEX) downloaded_dump <= 1'b1;
 	end
 
-	// Track completion of dump upload
-	if ((last_ioctl_upload != ioctl_upload) && (ioctl_upload == 1'b0))
-	begin
-		if (last_ioctl_index==HS_DUMPINDEX)
-		begin
-			uploaded_dump <= 1'b1;
-			// Mark uploaded dump as readable in case of reset
-			downloaded_dump <= 1'b1;
-		end
-	end
-
-	// Track last ioctl values 
+	// Track last cycle values
 	last_ioctl_download <= ioctl_download;
-	last_ioctl_upload <= ioctl_upload;
 	last_ioctl_index <= ioctl_index;
+	last_OSD_STATUS <= OSD_STATUS;
+
+	// Cascade incoming data bytes from HPS
 	if(ioctl_download && ioctl_wr)
 	begin
-		last_ioctl_dout3 = last_ioctl_dout2;
-		last_ioctl_dout2 = last_ioctl_dout;
-		last_ioctl_dout = ioctl_dout;
+		last_data_from_hps3 = last_data_from_hps2;
+		last_data_from_hps2 = last_data_from_hps;
+		last_data_from_hps = data_from_hps;
 	end
 
+	// If we have a valid configuration then enable the hiscore system
 	if(downloaded_config)
 	begin
-		// Check for end of state machine reset to initialise state machine
+	
+		// Check for end of core reset to initialise state machine for restore
 		reset_last <= reset;
-		if (reset_last == 1'b1 && reset == 1'b0)
+		if (downloaded_dump == 1'b1 && reset_last == 1'b1 && reset == 1'b0)
 		begin
 			wait_timer <= START_WAIT;
-			next_state <= SM_INIT;
+			next_state <= SM_INIT_RESTORE;
 			state <= SM_TIMER;
 			counter <= 1'b0;
 			initialised <= initialised + 1'b1;
+			restoring_dump <= 1'b1;
 		end
 		else
 		begin
-			// Upload scores to HPS
+			// Upload scores if requested by HPS
+			// - Data is now sent from the hiscore data buffer rather than game RAM as in previous versions
 			if (uploading_dump == 1'b1)
 			begin
-				// generate addresses to read high score from game memory. Base addresses off ioctl_address
-				if (ioctl_addr == 25'b0) begin
-					local_addr <= 0;
-					base_io_addr <= 25'b0;
-					counter <= 1'b0000;
-				end
-				// Move to next entry when last address is reached
-				if (old_io_addr!=ioctl_addr && ram_addr==end_addr[24:0])
-				begin
-					counter <= counter + 1'b1;
-					base_io_addr <= ioctl_addr;
-				end
-				// Set game ram address for reading back to HPS
-				ram_addr <= addr_base + (ioctl_addr - base_io_addr);
-				// Set local addresses to update cached dump in case of reset
-				local_addr <= ioctl_addr[HS_SCOREWIDTH-1:0];
+				// Set local address to read from hiscore data based on ioctl_address
+				data_addr <= ioctl_addr[HS_SCOREWIDTH-1:0];
+				// Clear dump dirty flag
+				dump_dirty <= 1'b0;
+			end
+
+			// Trigger hiscore extraction when OSD is opened
+			if(last_OSD_STATUS==1'b0 && OSD_STATUS==1'b1 && extracting_dump==1'b0 && uploading_dump==1'b0 && restoring_dump==1'b0)
+			begin
+				extracting_dump <= 1'b1;
+				state <= SM_COMPAREINIT;
+			end
+
+			// Extract hiscore data from game RAM and save in hiscore data buffer
+			if (extracting_dump == 1'b1)
+			begin
+				case (state)
+					// Compare process states
+					SM_COMPAREINIT: // Initialise state machine for comparison 
+						begin
+							// Setup addresses and comparison flags
+							buffer_addr <= 0;
+							data_addr <= 0;
+							counter <= 0;
+							compare_nonzero <= 1'b0;
+							compare_changed <= 1'b0;
+							compare_length <= 1'b0;
+							// Pause cpu and wait for next state
+							pause_cpu <= 1'b1;
+							state <= SM_TIMER;
+							next_state <= SM_COMPAREBEGIN;
+							wait_timer <= ACCESS_PAUSEPAD;
+						end
+					SM_COMPAREBEGIN:
+						begin
+							// Get ready to read next line (wait until addr_base is updated)
+							reading_scores <= 1'b1;
+							state <= SM_COMPAREREADY;
+						end
+					SM_COMPAREREADY:
+						begin
+							// Set ram address and wait for it to return correctly
+							ram_addr <= addr_base;
+							if(ram_addr == addr_base)
+							begin
+								state <= SM_COMPAREREAD;
+							end
+						end
+					SM_COMPAREREAD:
+						begin
+							// Setup next address and signal write enable to hiscore buffer
+							buffer_write <= 1'b1;
+							state <= SM_COMPAREDONE;
+						end
+					SM_COMPAREDONE:
+						begin
+							// If RAM data has changed since last dump and there is either no mask or a 1 in the mask for this address
+							if (data_from_ram != hiscore_data_out && (CHANGEMASK==8'b0 || check_mask==1))
+							begin
+								// Hiscore data changed
+								compare_changed <= 1'b1;
+							end
+							if (data_from_ram != 8'b0)
+							begin
+								// Hiscore data is not blank
+								compare_nonzero <= 1'b1;
+							end
+							compare_length <= compare_length + 20'b1;
+							// Move to next entry when last address is reached
+							if (ram_addr == end_addr)
+							begin
+								// If this was the last entry then we are done
+								if (counter == total_entries)
+								begin
+									state <= SM_TIMER;
+									reading_scores <= 1'b0;
+									next_state <= SM_COMPARECOMPLETE;
+									wait_timer <= ACCESS_PAUSEPAD;
+								end
+								else
+								begin
+									// Next config line
+									counter <= counter + 1'b1;
+									state <= SM_COMPAREBEGIN;
+								end
+							end
+							else
+							begin
+								// Keep extracting this section
+								state <= SM_COMPAREREAD;
+								ram_addr <= ram_addr + 1'b1;
+							end
+							// Always stop writing to hiscore dump ram and increment local address
+							buffer_addr <= buffer_addr + 1'b1;
+							data_addr <= data_addr + 1'b1;
+							buffer_write <= 1'b0;
+						end
+					SM_COMPARECOMPLETE:
+						begin
+							pause_cpu <= 1'b0;
+							reading_scores <= 1'b0;
+							if (compare_changed == 1'b1 && compare_nonzero == 1'b1)
+							begin
+								// If high scores have changed and are not blank, update the hiscore data from extract buffer
+								dump_dirty <= 1'b1;
+								state <= SM_EXTRACTINIT;
+							end
+							else
+							begin
+								// If no change or scores are invalid leave the existing hiscore data in place
+								if(dump_dirty == 1'b1 && autosave == 1'b1)
+								begin
+									state <= SM_EXTRACTSAVE;
+								end
+								else
+								begin
+									extracting_dump <= 1'b0;
+									state <= SM_STOPPED;
+								end
+							end
+						end
+					SM_EXTRACTINIT:
+						begin
+							// Setup address and counter
+							data_addr <= 0;
+							buffer_addr <= 0;
+							state <= SM_EXTRACT;
+							dump_write <= 1'b1;
+						end
+					SM_EXTRACT:
+						begin
+							// Keep writing until end of buffer
+							if (buffer_addr == compare_length)
+							begin
+								dump_write <= 1'b0;
+								state <= SM_EXTRACTSAVE;
+							end
+							// Increment buffer address and set data address to one behind
+							data_addr <= buffer_addr;
+							buffer_addr <= buffer_addr + 1'b1;
+						end
+					SM_EXTRACTSAVE:
+						begin
+							if(autosave == 1'b1)
+							begin
+								ioctl_upload_req <= 1'b1;
+								state <= SM_TIMER;
+								next_state <= SM_EXTRACTCOMPLETE;
+								wait_timer <= 4'd4;
+							end
+							else
+							begin
+								extracting_dump <= 1'b0;
+								state <= SM_STOPPED;
+							end
+						end
+					SM_EXTRACTCOMPLETE:
+						begin
+							ioctl_upload_req <= 1'b0;
+							extracting_dump <= 1'b0;
+							state <= SM_STOPPED;
+						end
+				endcase
 			end
 			
-			if (ioctl_upload == 1'b0 && downloaded_dump == 1'b1 && reset == 1'b0)
+			// If we are not uploading or resetting and valid hiscore data is available then start the state machine to write data to game RAM
+			if (uploading_dump == 1'b0 && downloaded_dump == 1'b1 && reset == 1'b0)
 			begin
 				// State machine to write data to game RAM
 				case (state)
-					SM_INIT: // Start state machine
+					SM_INIT_RESTORE: // Start state machine
 						begin
 							// Setup base addresses
-							local_addr <= 0;
+							data_addr <= 0;
 							base_io_addr <= 25'b0;
 							// Reset entry counter and states
 							counter <= 0;
@@ -380,7 +595,7 @@ begin
 					SM_CHECKSTARTVAL: // Start check
 						begin
 							// Check for matching start value
-							if(wait_timer != CHECK_HOLD & ioctl_din == start_val)
+							if(wait_timer != CHECK_HOLD && data_from_ram == start_val)
 							begin
 								// Prepare end check
 								ram_addr <= end_addr;
@@ -408,7 +623,7 @@ begin
 					SM_CHECKENDVAL: // End check
 						begin
 							// Check for matching end value
-							if (wait_timer != CHECK_HOLD & ioctl_din == end_val)
+							if (wait_timer != CHECK_HOLD & data_from_ram == end_val)
 							begin
 								if (counter == total_entries)
 								begin
@@ -448,7 +663,7 @@ begin
 					SM_CHECKCANCEL: // Cancel start/end check run - disable RAM access and keep CPU paused 
 						begin
 							pause_cpu <= 1'b0;
-							next_state <= SM_INIT;
+							next_state <= SM_INIT_RESTORE;
 							state <= SM_TIMER;
 							wait_timer <= CHECK_WAIT;
 						end
@@ -472,7 +687,7 @@ begin
 
 					SM_WRITEREADY: // local ram should be correct, start write to game RAM
 						begin
-							ram_addr <= addr_base + (local_addr - base_io_addr);
+							ram_addr <= addr_base + (data_addr - base_io_addr);
 							state <= SM_TIMER;
 							next_state <= SM_WRITEDONE;
 							wait_timer <= WRITE_HOLD;
@@ -481,7 +696,7 @@ begin
 
 					SM_WRITEDONE:
 						begin
-							local_addr <= local_addr + 1'b1; // Increment to next byte of entry
+							data_addr <= data_addr + 1'b1; // Increment to next byte of entry
 							if (ram_addr == end_addr)
 							begin
 								// End of entry reached
@@ -494,7 +709,7 @@ begin
 									// Move to next entry
 									counter <= counter + 1'b1;
 									write_counter <= 1'b0;
-									base_io_addr <= local_addr + 1'b1;
+									base_io_addr <= data_addr + 1'b1;
 									state <= SM_WRITEBEGIN;
 								end
 							end 
@@ -509,12 +724,13 @@ begin
 						begin
 							ram_write <= 1'b0;
 							writing_scores <= 1'b0;
+							restoring_dump <= 1'b0;
 							state <= SM_TIMER;
 							if(write_counter < WRITE_REPEATCOUNT)
 							begin
 								// Schedule next write
 								next_state <= SM_WRITERETRY;
-								local_addr <= 0;
+								data_addr <= 0;
 								wait_timer <= WRITE_REPEATWAIT;
 							end
 							else
@@ -536,23 +752,28 @@ begin
 						begin
 							pause_cpu <= 1'b0;
 						end
-
-					SM_TIMER: // timer wait state
-						begin
-							if (wait_timer > 1'b0)
-								wait_timer <= wait_timer - 1'b1;
-							else
-								state <= next_state;
-						end
 				endcase
+			end
+			
+			if(state == SM_TIMER) // timer wait state
+			begin
+				// Do not progress timer if CPU is paused by source other than this module
+				// - Stops initial hiscore load delay being foiled by user pausing/entering OSD
+				if (paused == 1'b0 || pause_cpu == 1'b1)
+				begin
+					if (wait_timer > 1'b0)
+						wait_timer <= wait_timer - 1'b1;
+					else
+						state <= next_state;
+				end
 			end
 		end
 	end
-	old_io_addr<=ioctl_addr;
 end
 
 endmodule
 
+// Simple dual-port RAM module used by hiscore module
 module dpram_hs #(
 	parameter dWidth=8,
 	parameter aWidth=8
