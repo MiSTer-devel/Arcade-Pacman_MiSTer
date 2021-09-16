@@ -203,9 +203,10 @@ localparam CONF_STR = {
 	"OQS,CRT H-sync Adjust,0,1,2,3,4,5,6,7;",
 	"OTV,CRT V-sync Adjust,0,1,2,3,4,5,6,7;",
 	"-;",
+	"H2OP,Autosave Hiscores,Off,On;",
 	"P1,Pause options;",
-	"P1OP,Pause when OSD is open,On,Off;",
-	"P1OQ,Dim video after 10s,On,Off;",
+	"P1ON,Pause when OSD is open,On,Off;",
+	"P1OO,Dim video after 10s,On,Off;",
 	"-;",
 	"DIP;",
 	"-;",
@@ -265,6 +266,7 @@ wire        direct_video;
 
 wire        ioctl_download;
 wire        ioctl_upload;
+wire        ioctl_upload_req;
 wire  [7:0] ioctl_index;
 wire        ioctl_wr;
 wire [24:0] ioctl_addr;
@@ -286,13 +288,14 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 
 	.buttons(buttons),
 	.status(status),
-	.status_menumask({mod_ponp,direct_video}),
+	.status_menumask({~hs_configured,mod_ponp,direct_video}),
 	.forced_scandoubler(forced_scandoubler),
 	.gamma_bus(gamma_bus),
 	.direct_video(direct_video),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_upload(ioctl_upload),
+	.ioctl_upload_req(ioctl_upload_req),
 	.ioctl_wr(ioctl_wr),
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_dout),
@@ -392,7 +395,7 @@ pause #(3,3,2,24) pause (
 	.*,
 	.user_button(m_pause),
 	.pause_request(hs_pause),
-	.options(~status[26:25])
+	.options(~status[24:23])
 );
 
 wire hblank, vblank;
@@ -498,41 +501,44 @@ pacman pacman
 	.pause(pause_cpu),
 
 	.hs_address(hs_address),
+	.hs_data_out(hs_data_out),
 	.hs_data_in(hs_data_in),
-	.hs_data_out(ioctl_din),
-	.hs_write(hs_write),
-	.hs_access(hs_access)
+	.hs_write_enable(hs_write_enable),
+	.hs_access_read(hs_access_read),
+	.hs_access_write(hs_access_write)
 );
 
 // HISCORE SYSTEM
 // --------------
 
 wire [11:0]hs_address;
-wire [7:0]hs_data_in;
-wire hs_write;
-wire hs_access;
+wire [7:0] hs_data_in;
+wire [7:0] hs_data_out;
+wire hs_write_enable;
+wire hs_access_read;
+wire hs_access_write;
 wire hs_pause;
+wire hs_configured;
 
 hiscore #(
 	.HS_ADDRESSWIDTH(12),
 	.CFG_ADDRESSWIDTH(3),
 	.CFG_LENGTHWIDTH(2)
 ) hi (
+	.*,
 	.clk(clk_sys),
-	.reset(reset),
-	.ioctl_upload(ioctl_upload),
-	.ioctl_download(ioctl_download),
-	.ioctl_wr(ioctl_wr),
-	.ioctl_addr(ioctl_addr),
-	.ioctl_dout(ioctl_dout),
-	.ioctl_din(ioctl_din),
-	.ioctl_index(ioctl_index),
-
+	.paused(pause_cpu),
+	.autosave(status[25]),
 	.ram_address(hs_address),
+	.data_from_ram(hs_data_out),
 	.data_to_ram(hs_data_in),
-	.ram_write(hs_write),
-	.ram_access(hs_access),
-	.pause_cpu(hs_pause)
+	.data_from_hps(ioctl_dout),
+	.data_to_hps(ioctl_din),
+	.ram_write(hs_write_enable),
+	.ram_intent_read(hs_access_read),
+	.ram_intent_write(hs_access_write),
+	.pause_cpu(hs_pause),
+	.configured(hs_configured)
 );
 
 
