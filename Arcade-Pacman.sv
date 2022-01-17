@@ -323,6 +323,7 @@ reg mod_van  = 0;
 reg mod_pmm  = 0;
 reg mod_dshop= 0;
 reg mod_glob = 0;
+reg mod_numcr= 0;
 
 wire mod_gm = mod_gork | mod_mrtnt;
 
@@ -347,6 +348,7 @@ always @(posedge clk_sys) begin
 	mod_dshop<= (mod == 14);
 	mod_glob <= (mod == 15);
 	mod_jmpst<= (mod == 16);
+	mod_numcr<= (mod == 17);
 end
 
 reg [7:0] sw[8];
@@ -453,27 +455,28 @@ pacman pacman
 
 	.in0(sw[0] & (in0xor ^ {
 		mod_eeek & m_fire_2,
-		mod_alib & m_fire,
-		m_coin,
-		((mod_orig | mod_plus | mod_ms | mod_bird | mod_alib | mod_woodp) & m_cheat) | ((mod_ponp | mod_van | mod_dshop) & m_fire),
+		(mod_alib & m_fire) | ( mod_numcr ),
+		~mod_numcr & m_coin,
+		((mod_orig | mod_plus | mod_ms | mod_bird | mod_alib | mod_woodp | mod_numcr) & m_cheat) | ((mod_ponp | mod_van | mod_dshop) & m_fire),
 		m_down,
-		m_right,
-		m_left,
+		(~mod_numcr & m_right) | ( mod_numcr & m_left  ),
+		(~mod_numcr & m_left ) | ( mod_numcr & m_right ),
 		m_up
 	})),
 
 	.in1(sw[1] & (in1xor ^ {
-		mod_gm & m_fire_2,
-		m_start_2 | (mod_eeek & m_fire) | (mod_jmpst & m_fire_2),
-		m_start   | (mod_jmpst & m_fire),
+		(mod_gm & m_fire_2) ,
+		m_start_2 | (mod_eeek & m_fire) | (mod_jmpst & m_fire_2) | (mod_numcr & m_start),
+		(~mod_numcr&m_start)   | (mod_jmpst & m_fire) | (mod_numcr & m_coin),
 		(mod_gm & m_fire) | ((mod_alib | mod_ponp | mod_van | mod_dshop) & m_fire_2),
 		~mod_pmm & m_down_2,
 		mod_pmm ? m_fire : m_right_2,
 		~mod_pmm & m_left_2,
-		~mod_pmm & m_up_2
+		(~mod_pmm & m_up_2) | (mod_numcr&m_fire)
 	})),
+	
 	.dipsw1(sw[2]),
-	.dipsw2((mod_ponp | mod_van | mod_dshop) ? sw[3] : 8'hFF),
+	.dipsw2((mod_numcr| mod_ponp | mod_van | mod_dshop) ? sw[3] : 8'hFF),
 
 	.mod_plus(mod_plus),
 	.mod_jmpst(mod_jmpst),
