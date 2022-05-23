@@ -29,7 +29,7 @@ module emu
 	input         RESET,
 
 	//Must be passed to hps_io module
-	inout  [45:0] HPS_BUS,
+	inout  [48:0] HPS_BUS,
 
 	//Base video clock. Usually equals to CLK_SYS.
 	output        CLK_VIDEO,
@@ -292,6 +292,7 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 	.forced_scandoubler(forced_scandoubler),
 	.gamma_bus(gamma_bus),
 	.direct_video(direct_video),
+	.video_rotated(video_rotated),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_upload(ioctl_upload),
@@ -424,6 +425,8 @@ arcade_video #(288,8) arcade_video
 
 wire no_rotate = status[2] | direct_video | mod_ponp;
 wire rotate_ccw = 0;
+wire flip = 0;
+wire video_rotated;
 screen_rotate screen_rotate (.*);
 
 wire [9:0] audio;
