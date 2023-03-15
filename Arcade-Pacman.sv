@@ -52,6 +52,7 @@ module emu
 	output        VGA_F1,
 	output [1:0]  VGA_SL,
 	output        VGA_SCALER, // Force VGA scaler
+	output		  VGA_DISABLE,
 
 	input  [11:0] HDMI_WIDTH,
 	input  [11:0] HDMI_HEIGHT,
@@ -187,11 +188,12 @@ assign BUTTONS   = 0;
 assign AUDIO_MIX = 0;
 assign FB_FORCE_BLANK = 0;
 assign HDMI_FREEZE = 0;
+assign VGA_DISABLE = 0;
 
 wire [1:0] ar = status[15:14];
 
-assign VIDEO_ARX = (!ar) ? ((status[2] | mod_ponp) ? 8'd4 : 8'd3) : (ar - 1'd1);
-assign VIDEO_ARY = (!ar) ? ((status[2] | mod_ponp) ? 8'd3 : 8'd4) : 12'd0;
+assign VIDEO_ARX = (!ar) ? ((status[2] | mod_ponp) ? 12'd2880 : 12'd2219) : (ar - 1'd1);
+assign VIDEO_ARY = (!ar) ? ((status[2] | mod_ponp) ? 12'd2219 : 12'd2880) : 12'd0;
 
 `include "build_id.v" 
 localparam CONF_STR = {
