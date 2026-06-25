@@ -74,7 +74,17 @@ port (
 	ENA_6             : in    std_logic;
 	CLK               : in    std_logic;
 
-	flip_screen       : in    std_logic
+	flip_screen       : in    std_logic;
+
+	-- Jr. Pac-Man (gated by mod_jr; defaults keep non-Jr instantiations valid)
+	mod_jr            : in    std_logic := '0';
+	jr_scroll         : in    std_logic_vector(7 downto 0) := (others => '0');
+	jr_charbank       : in    std_logic := '0';
+	jr_spritebank     : in    std_logic := '0';
+	jr_palbank        : in    std_logic := '0';
+	jr_colortabbank   : in    std_logic := '0';
+	jr_bgpriority     : in    std_logic := '0';
+	jr_hud            : in    std_logic := '0'   -- '1' = HUD/non-scrolling column; '0' = scrolling playfield (for sub-tile scroll)
 );
 end;
 
@@ -96,7 +106,7 @@ architecture RTL of PACMAN_VIDEO is
 	signal obj_on             : std_logic;
 
 	signal cax                : std_logic_vector(1 downto 0);
-	signal ca                 : std_logic_vector(12 downto 0);
+	signal ca                 : std_logic_vector(13 downto 0);  -- 14-bit for Jr (16KB gfx); bit13=0 for non-Jr
 	signal char_rom_5ef_dout  : std_logic_vector(7 downto 0);
 	signal char_rom_5ef_buf   : std_logic_vector(7 downto 0);
 
@@ -124,17 +134,36 @@ architecture RTL of PACMAN_VIDEO is
 	signal sprite_ram_reg     : std_logic_vector(5 downto 0);
 
 	signal video_op_sel       : std_logic;
-	signal final_col          : std_logic_vector(3 downto 0);
+	signal final_col          : std_logic_vector(4 downto 0);  -- Jr: bit4 = palettebank
 
 	signal gfx_cs             : std_logic;
 	signal prom_cs            : std_logic;
 	signal rom7_cs            : std_logic;
 	signal rom4a_cs           : std_logic;
+	-- Jr. Pac-Man gfx load (16KB)
+	signal jr_gfx_cs          : std_logic;
+	signal gfx_we             : std_logic;
+	signal gfx_waddr          : std_logic_vector(13 downto 0);
+	signal jr_gfx_waddr       : std_logic_vector(15 downto 0);
+	-- Jr. Pac-Man colour path
+	signal jr_clut_cs         : std_logic;
+	signal jr_pal_lo_cs       : std_logic;
+	signal jr_pal_hi_cs       : std_logic;
+	signal clut_a7            : std_logic;
+	signal pm_rgb             : std_logic_vector(7 downto 0);
+	signal jr_pal_lo_q        : std_logic_vector(7 downto 0);
+	signal jr_pal_hi_q        : std_logic_vector(7 downto 0);
+	signal rgb_out            : std_logic_vector(7 downto 0);
 
 begin
 
 	prom_cs <= '1' when dn_addr(15 downto 14) = "11" else '0';
 	gfx_cs  <= '1' when dn_addr(15 downto 13) = "100" else '0';
+	-- Jr. Pac-Man: gfx loads linearly — tiles dn A000-BFFF -> char ROM 0x0000-1FFF, sprites dn C000-DFFF -> 0x2000-3FFF.
+	jr_gfx_cs    <= '1' when mod_jr='1' and dn_addr >= x"A000" and dn_addr < x"E000" else '0';
+	jr_gfx_waddr <= dn_addr - x"A000";
+	gfx_we       <= (dn_wr and jr_gfx_cs) when mod_jr='1' else (dn_wr and gfx_cs);
+	gfx_waddr    <= jr_gfx_waddr(13 downto 0) when mod_jr='1' else ('0' & dn_addr(12 downto 0));
 
 	-- invert sprite position when flip_screen mode is enabled. offset x positions
 	xy <= not sprite_xy_ram_temp when flip_screen = '0' else sprite_xy_ram_temp - 19 when I_AB(0) = '1' else sprite_xy_ram_temp - 15 + to_integer(unsigned'("" & (not (I_AB(1) and I_AB(2)) xor I_AB(3)) & "0"));
@@ -161,6 +190,7 @@ begin
 	p_char_regs : process
 		variable inc : std_logic;
 		variable sum : std_logic_vector(8 downto 0);
+		variable sum_line : std_logic_vector(8 downto 0);  -- Jr smooth-scroll: within-tile vertical line w/ jr_scroll added (playfield only)
 		variable match : std_logic;
 	begin
 		wait until rising_edge (CLK);
@@ -170,6 +200,16 @@ begin
 			-- 1f, 2f
 			sum := (I_VCNT(7 downto 0) & '1') + (dr & inc);
 
+			-- Jr. Pac-Man SMOOTH (sub-tile) scroll. The COARSE tile row already includes jr_scroll (pacman.vhd jr_mr);
+			-- add the SAME scroll to the WITHIN-tile vertical line here so the playfield moves 1px/step, not 8px (blocky).
+			-- Gates: I_HBLANK='0' keeps sprite-Y matching + 'match' on the UNscrolled counter (sprites stay put);
+			--        jr_hud='0' keeps the HUD score rows (non-scrolling cols) from shearing. Non-Jr untouched.
+			if (mod_jr = '1' and jr_hud = '0' and I_HBLANK = '0') then
+				sum_line := ((I_VCNT(7 downto 0) + jr_scroll) & '1') + (dr & inc);
+			else
+				sum_line := sum;
+			end if;
+
 			-- 3e
 			match := '0';
 
@@ -178,7 +218,7 @@ begin
 			end if;
 
 			-- 1h
-			char_sum_reg     <= sum(4 downto 1);
+			char_sum_reg     <= sum_line(4 downto 1);  -- was sum(4 downto 1); sum_line carries Jr sub-tile scroll
 			char_match_reg   <= match;
 			char_hblank_reg  <= I_HBLANK;
 
@@ -203,11 +243,23 @@ begin
 
 	p_char_addr_comb : process(db_reg, I_HCNT,
 										char_match_reg, char_sum_reg, char_hblank_reg,
-										xflip, yflip, MRTNT, PONP, cax)
+										xflip, yflip, MRTNT, PONP, cax,
+										mod_jr, jr_charbank, jr_spritebank)
 	begin
 		obj_on <= char_match_reg or I_HCNT(8); -- 256h not 256h_l
 
-		ca(12) <= char_hblank_reg;
+		-- Jr: 16KB gfx — region (tile/sprite) moves to ca(13); ca(12)=bank (char/sprite). Pac-Man: ca(13)=0, ca(12)=region.
+		if mod_jr = '1' then
+			ca(13) <= char_hblank_reg;
+			if char_hblank_reg = '0' then
+				ca(12) <= jr_charbank;
+			else
+				ca(12) <= jr_spritebank;
+			end if;
+		else
+			ca(13) <= '0';
+			ca(12) <= char_hblank_reg;
+		end if;
 		ca(11 downto 6) <= db_reg(7 downto 2);
 
 		-- 2h, 4e
@@ -245,14 +297,14 @@ begin
 	char_rom_5ef_dout <= char_rom_5ef_buf(7) & char_rom_5ef_buf(4) & char_rom_5ef_buf(5) & char_rom_5ef_buf(6) & char_rom_5ef_buf(3 downto 0) when MRTNT = '1' else char_rom_5ef_buf;
 
 	-- char roms
-	char_rom_5ef : work.dpram generic map (13,8)
+	char_rom_5ef : work.dpram generic map (14,8)
 	port map
 	(
 		clock_a   => clk,
-		wren_a    => dn_wr and gfx_cs,
-		address_a => dn_addr(12 downto 0),
+		wren_a    => gfx_we,
+		address_a => gfx_waddr,
 		data_a    => dn_data,
-	
+
 		clock_b   => clk,
 		address_b => ca,
 		q_b       => char_rom_5ef_buf
@@ -312,17 +364,20 @@ begin
 	end process;
 
 	rom4a_cs <= '1' when dn_addr(9 downto 8) = "01" else '0';
+	-- Jr: colour-lookup PROM (9p) at dn E200-E2FF; CLUT address top bit = colortablebank.
+	jr_clut_cs <= '1' when mod_jr='1' and dn_addr(15 downto 8) = x"E2" else '0';
+	clut_a7    <= jr_colortabbank when mod_jr='1' else '0';
 
 	col_rom_4a : work.dpram generic map (8,8)
 	port map
 	(
 		clock_a   => CLK,
-		wren_a    => dn_wr and rom4a_cs and prom_cs,
+		wren_a    => dn_wr and ((rom4a_cs and prom_cs) or jr_clut_cs),
 		address_a => dn_addr(7 downto 0),
 		data_a    => dn_data,
 	
 		clock_b   => CLK,
-		address_b(7)          => '0',
+		address_b(7)          => clut_a7,
 		address_b(6 downto 2) => vout_db(4 downto 0),
 		address_b(1 downto 0) => shift_op(1 downto 0),
 		q_b       => lut_4a
@@ -387,16 +442,24 @@ begin
 		end if;
 	end process;
 
-	p_video_op_comb : process(vout_hblank, I_VBLANK, video_op_sel, sprite_ram_reg, lut_4a)
+	p_video_op_comb : process(vout_hblank, I_VBLANK, video_op_sel, sprite_ram_reg, lut_4a, jr_palbank, jr_bgpriority, mod_jr)
 	begin
-		-- 3b
+		-- 3b ; Jr: bit4 = palettebank. bgpriority=1 => tiles draw OVER sprites (tile pen!=0 wins; else sprite; else black).
 		if (vout_hblank = '1') or (I_VBLANK = '1') then
 			final_col <= (others => '0');
+		elsif (mod_jr = '1' and jr_bgpriority = '1') then
+			if (lut_4a(3 downto 0) /= "0000") then
+				final_col <= jr_palbank & lut_4a(3 downto 0);          -- tile over sprite
+			elsif (video_op_sel = '1') then
+				final_col <= jr_palbank & sprite_ram_reg(5 downto 2);  -- sprite where tile transparent
+			else
+				final_col <= (others => '0');                          -- black background
+			end if;
 		else
 			if (video_op_sel = '1') then
-				final_col <= sprite_ram_reg(5 downto 2); -- sprite
+				final_col <= (jr_palbank and mod_jr) & sprite_ram_reg(5 downto 2); -- sprite
 			else
-				final_col <= lut_4a(3 downto 0);
+				final_col <= (jr_palbank and mod_jr) & lut_4a(3 downto 0);
 			end if;
 		end if;
 	end process;
@@ -404,19 +467,37 @@ begin
 	-- assign video outputs from color LUT PROM
 	rom7_cs <= '1' when dn_addr(9 downto 4) = "110000" else '0';
 
-	col_rom_7f : work.dpram generic map (4,8)
+	-- Pac-Man base palette (widened to 32 so Jr's 5-bit final_col fits; Pac-Man loads 16, never addresses >15).
+	col_rom_7f : work.dpram generic map (5,8)
 	port map
 	(
 		clock_a   => CLK,
 		wren_a    => dn_wr and rom7_cs and prom_cs,
-		address_a => dn_addr(3 downto 0),
+		address_a => '0' & dn_addr(3 downto 0),
 		data_a    => dn_data,
-	
+
 		clock_b   => CLK,
-		address_b =>  final_col,
-		q_b(2 downto 0)   =>  O_RED,
-		q_b(5 downto 3)   =>  O_GREEN,
-		q_b(7 downto 6)   =>  O_BLUE
-  );
+		address_b => final_col,
+		q_b       => pm_rgb
+	);
+
+	-- Jr base palette (32 colours, RRRGGGBB) from 9e (low nibble, dn E000) + 9f (high nibble, dn E100).
+	jr_pal_lo_cs <= '1' when mod_jr='1' and dn_addr(15 downto 8) = x"E0" else '0';
+	jr_pal_hi_cs <= '1' when mod_jr='1' and dn_addr(15 downto 8) = x"E1" else '0';
+
+	jr_pal_lo : work.dpram generic map (8,8)
+	port map (
+		clock_a => CLK, wren_a => dn_wr and jr_pal_lo_cs, address_a => dn_addr(7 downto 0), data_a => dn_data,
+		clock_b => CLK, address_b => "000" & final_col, q_b => jr_pal_lo_q );
+
+	jr_pal_hi : work.dpram generic map (8,8)
+	port map (
+		clock_a => CLK, wren_a => dn_wr and jr_pal_hi_cs, address_a => dn_addr(7 downto 0), data_a => dn_data,
+		clock_b => CLK, address_b => "000" & final_col, q_b => jr_pal_hi_q );
+
+	rgb_out <= (jr_pal_hi_q(3 downto 0) & jr_pal_lo_q(3 downto 0)) when mod_jr = '1' else pm_rgb;
+	O_RED   <= rgb_out(2 downto 0);
+	O_GREEN <= rgb_out(5 downto 3);
+	O_BLUE  <= rgb_out(7 downto 6);
 
 end architecture;
