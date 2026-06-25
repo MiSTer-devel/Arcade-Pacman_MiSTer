@@ -272,9 +272,24 @@ architecture RTL of PACMAN is
 		x"00",x"01",x"04",x"00",x"01",x"04",x"05",x"00",
 		x"01",x"00",x"01",x"00",x"01",x"00",x"01",x"00"
 	);
-	signal jr_xor_idx       : integer range 0 to 79 := 0;
-	signal jr_xor_run       : unsigned(15 downto 0) := x"00C1";  -- JR_XOR_TBL(0).cnt
-	signal jr_xor_val       : std_logic_vector(7 downto 0) := x"00";  -- JR_XOR_TBL(0).val (current byte's mask)
+	-- Jr program-ROM DECRYPT, address-indexed (rom_descrambler-style: store raw, decode statelessly). Replaces the
+	-- old stateful run-length walker, which mis-counted the 0x5968 run in silicon and garbled the post-grid code
+	-- (HW-confirmed root cause + fix 2026-06-25). JR_BOUND(i) = prefix sum of JR_CNT_TBL = download offset where
+	-- entry i begins (compile-time constant).
+	type jr_bound_t is array(0 to 80) of unsigned(15 downto 0);
+	function jr_calc_bounds return jr_bound_t is
+		variable b   : jr_bound_t;
+		variable acc : unsigned(15 downto 0) := (others => '0');
+	begin
+		for i in 0 to 79 loop
+			b(i) := acc;
+			acc  := acc + JR_CNT_TBL(i);
+		end loop;
+		b(80) := acc;
+		return b;
+	end function;
+	constant JR_BOUND  : jr_bound_t := jr_calc_bounds;
+	signal jr_xor_comb : std_logic_vector(7 downto 0);
 	signal jr_dn_data       : std_logic_vector(7 downto 0);          -- decrypted download byte
 
 	component ym2149 is port
@@ -674,36 +689,20 @@ jr_prog_dl  <= '1' when dn_addr < x"A000" else '0';   -- program region of the J
 -- Store the contiguous blob at the CPU addresses: dn 0000-3FFF stays; dn 4000-9FFF -> 8000-DFFF.
 jr_dn_waddr <= dn_addr when dn_addr < x"4000" else (dn_addr + x"4000");
 
--- Jr program-ROM decryption walker: replicate MAME init_jrpacman's run-length XOR.
--- Armed to entry 0 while dn_addr=0 (before the first byte); advances exactly once per
--- download byte (dn_wr is a 1-cycle MiSTer strobe). jr_xor_val holds the mask for the
--- byte being written THIS cycle; the dpram latches data_b on the same edge, so the
--- post-decrement/advance below targets the NEXT byte. (dn_addr=0 only at the true start:
--- this MRA's total download is < 64K, so dn_addr never wraps back to 0 mid-load.)
-p_jr_decrypt : process(clk)
-	variable ni : integer range 0 to 79;
+-- ADDRESS-INDEXED decrypt (rom_descrambler-style: stateless, no run counter to drift across the 0x5968 run).
+-- Combinational XOR value = entry whose [JR_BOUND(i),JR_BOUND(i+1)) range contains dn_addr.
+p_jr_decode_comb : process(dn_addr)
+	variable v : std_logic_vector(7 downto 0);
 begin
-	if rising_edge(clk) then
-		if (dn_addr = x"0000" and dn_wr = '0') then
-			jr_xor_idx <= 0;
-			jr_xor_run <= JR_CNT_TBL(0);
-			jr_xor_val <= JR_VAL_TBL(0);
-		elsif (dn_wr = '1' and mod_jr = '1' and jr_prog_dl = '1') then
-			if jr_xor_run > 1 then
-				jr_xor_run <= jr_xor_run - 1;
-			elsif jr_xor_idx < 79 then
-				ni := jr_xor_idx + 1;          -- guarded: idx<79 => ni in 1..79, in-bounds
-				jr_xor_idx <= ni;
-				jr_xor_run <= JR_CNT_TBL(ni);
-				jr_xor_val <= JR_VAL_TBL(ni);
-			end if;
+	v := JR_VAL_TBL(0);
+	for i in 0 to 79 loop
+		if unsigned(dn_addr) >= JR_BOUND(i) then
+			v := JR_VAL_TBL(i);
 		end if;
-	end if;
+	end loop;
+	jr_xor_comb <= v;
 end process;
--- jr_dn_data <= dn_data xor jr_xor_val;   -- decrypted program byte (mask is 0x00 outside the two encrypted zones)
--- DIAG-REVERT-2026-06-25: original below, uncomment to restore decrypt walker
--- jr_dn_data <= dn_data xor jr_xor_val;
-jr_dn_data <= dn_data;   -- DIAG: walker bypassed; expects pre-decrypted blob (DECRYPT-TEST.mra)
+jr_dn_data <= dn_data xor jr_xor_comb;   -- decrypted program byte (mask 0x00 outside the encrypted zones)
 
 u_jr_prog_rom : work.dpram generic map (16,8)
 port map
@@ -882,6 +881,7 @@ port map (
 	I_WR1_L       => wr1_l,
 	I_WR0_L       => wr0_l,
 	I_SOUND_ON    => c_sound,
+	mod_jr        => mod_jr,
 	--
 	dn_addr       => dn_addr,
 	dn_data       => dn_data,
