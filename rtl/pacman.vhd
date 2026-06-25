@@ -89,6 +89,8 @@ port
 	v_offset    : in  std_logic_vector(2 downto 0);
 
 	--
+	mod_jr     : in  std_logic := '0';      -- Jr. Pac-Man
+
 	dn_addr    : in  std_logic_vector(15 downto 0);
 	dn_data    : in  std_logic_vector(7 downto 0);
 	dn_wr      : in  std_logic;
@@ -201,6 +203,94 @@ architecture RTL of PACMAN is
 	signal wav1u,wav2u,wav3u: std_logic_vector(7 downto 0);
 	signal wav4u            : std_logic_vector(7 downto 0);
 	signal ay_we            : std_logic;
+	-- Jr. Pac-Man program ROM (mod_jr)
+	signal jr_rom_data      : std_logic_vector(7 downto 0);
+	signal jr_rom_sel       : std_logic;
+	signal jr_prog_dl       : std_logic;
+	signal jr_dn_waddr      : std_logic_vector(15 downto 0);
+	-- Jr. Pac-Man latch2 (5070) + scroll (5080)
+	signal jr_latch2        : std_logic_vector(7 downto 0);
+	signal jr_scroll        : std_logic_vector(7 downto 0);
+	signal jr_latch2_l      : std_logic;
+	signal jr_scroll_l      : std_logic;
+	signal jr_palbank       : std_logic;
+	signal jr_colortabbank  : std_logic;
+	signal jr_bgpriority    : std_logic;
+	signal jr_charbank      : std_logic;
+	signal jr_spritebank    : std_logic;
+	-- Jr. Pac-Man video RAM address
+	signal jr_mc            : std_logic_vector(5 downto 0);
+	signal jr_mr            : std_logic_vector(5 downto 0);
+	signal jr_vy            : std_logic_vector(8 downto 0);
+	signal jr_hud           : std_logic;
+	signal jr_pf_scan       : std_logic_vector(11 downto 0);
+	signal jr_hud_scan      : std_logic_vector(11 downto 0);
+	signal jr_code_addr     : std_logic_vector(11 downto 0);
+	signal jr_color_addr    : std_logic_vector(11 downto 0);
+	signal jr_vram_addr     : std_logic_vector(11 downto 0);
+
+	-- Jr. Pac-Man program-ROM DECRYPTION (jrpacman.cpp init_jrpacman, lines 384-425).
+	-- The aux-board encryption PALs garble bits 0, 2, 7. MAME decrypts by walking the
+	-- maincpu region linearly and XORing each byte with a run-length-encoded value.
+	-- The table below is that exact table; A index = linear maincpu addr = CPU addr.
+	-- OUR download skips the 4000-7FFF gap (dn 4000-9FFF -> CPU 8000-DFFF). That gap is
+	-- entirely inside entry #8's {0x9968,0x00} no-XOR run, so entry #8 is shortened by
+	-- 0x4000 -> {0x5968,0x00} to keep the later XORs aligned to the download offset.
+	-- Walked once per download byte; gated on mod_jr + jr_prog_dl (Pac-Man untouched).
+	-- ROBUST-TABLE-2026-06-25: was a record-array constant (jr_xor_tbl_t) indexed by a signal.
+	-- That pattern mis-synthesized on Quartus 17.0 (the .val lookup read as 0x00 in silicon =>
+	-- encrypted zones left RAW => boot reached the grid but crashed on the first encrypted code
+	-- at $9C00). Split into two flat constant arrays (reliable ROM inference). Values IDENTICAL
+	-- to the old table; entry #8 still 0x5968 (gap-removed). See JRPACMAN_PORT_NOTES.md.
+	type jr_cnt_t is array(0 to 79) of unsigned(15 downto 0);
+	type jr_val_t is array(0 to 79) of std_logic_vector(7 downto 0);
+	constant JR_CNT_TBL : jr_cnt_t := (
+		x"00C1",x"0002",x"0004",x"0006",x"0003",x"0002",
+		x"0009",x"0004",x"5968",x"0001",x"0002",x"0001",
+		x"0009",x"0002",x"0009",x"0001",x"00AF",x"000E",
+		x"0002",x"0004",x"001E",x"0001",x"0002",x"0001",
+		x"0002",x"0002",x"0009",x"0002",x"0009",x"0002",
+		x"0083",x"0001",x"0001",x"0001",x"0002",x"0001",
+		x"0003",x"0003",x"0002",x"0001",x"0003",x"0003",
+		x"0003",x"0001",x"002E",x"0078",x"0001",x"0001",
+		x"0001",x"0001",x"0001",x"0002",x"0001",x"0001",
+		x"0002",x"0001",x"0001",x"0002",x"0001",x"0001",
+		x"0001",x"0001",x"0001",x"0001",x"0002",x"0001",
+		x"0001",x"0002",x"0001",x"0001",x"0001",x"0001",
+		x"01B0",x"0001",x"0002",x"00AD",x"0031",x"005C",
+		x"0005",x"604E"
+	);
+	constant JR_VAL_TBL : jr_val_t := (
+		x"00",x"80",x"00",x"80",x"00",x"80",x"00",x"80",
+		x"00",x"80",x"00",x"80",x"00",x"80",x"00",x"80",
+		x"00",x"04",x"00",x"04",x"00",x"80",x"00",x"80",
+		x"00",x"80",x"00",x"80",x"00",x"80",x"00",x"04",
+		x"01",x"00",x"05",x"00",x"04",x"01",x"00",x"04",
+		x"01",x"00",x"04",x"01",x"00",x"01",x"04",x"05",
+		x"00",x"01",x"04",x"00",x"01",x"04",x"00",x"01",
+		x"04",x"00",x"01",x"04",x"05",x"00",x"01",x"04",
+		x"00",x"01",x"04",x"00",x"01",x"04",x"05",x"00",
+		x"01",x"00",x"01",x"00",x"01",x"00",x"01",x"00"
+	);
+	-- Jr program-ROM DECRYPT, address-indexed (rom_descrambler-style: store raw, decode statelessly). Replaces the
+	-- old stateful run-length walker, which mis-counted the 0x5968 run in silicon and garbled the post-grid code
+	-- (HW-confirmed root cause + fix 2026-06-25). JR_BOUND(i) = prefix sum of JR_CNT_TBL = download offset where
+	-- entry i begins (compile-time constant).
+	type jr_bound_t is array(0 to 80) of unsigned(15 downto 0);
+	function jr_calc_bounds return jr_bound_t is
+		variable b   : jr_bound_t;
+		variable acc : unsigned(15 downto 0) := (others => '0');
+	begin
+		for i in 0 to 79 loop
+			b(i) := acc;
+			acc  := acc + JR_CNT_TBL(i);
+		end loop;
+		b(80) := acc;
+		return b;
+	end function;
+	constant JR_BOUND  : jr_bound_t := jr_calc_bounds;
+	signal jr_xor_comb : std_logic_vector(7 downto 0);
+	signal jr_dn_data       : std_logic_vector(7 downto 0);          -- decrypted download byte
 
 	component ym2149 is port
 	(
@@ -348,7 +438,13 @@ port map (
 -- primary addr decode
 --
 -- syncbus 0x4000 - 0x7FFF
-sync_bus_cs_l   <= '0' when cpu_mreq_l = '0' and cpu_rfsh_l = '1' and cpu_addr(14) = '1' else '1';
+-- Pac-Man uses cpu_addr(14)=1 as shorthand for the VRAM/IO sync-bus region (4000-7FFF),
+-- valid only because Pac-Man ROM never has A14=1. Jr's program ROM extends to C000-DFFF
+-- (A14=1), so for Jr the sync bus must be restricted to 4000-7FFF (A15:14="01"); otherwise
+-- C000-DFFF fetches return sync_bus_reg (VRAM) instead of jr_rom_data + inject WAITs.
+sync_bus_cs_l   <= '0' when cpu_mreq_l = '0' and cpu_rfsh_l = '1' and
+                       ( (mod_jr = '0' and cpu_addr(14) = '1') or
+                         (mod_jr = '1' and cpu_addr(15 downto 14) = "01") ) else '1';
 sync_bus_wreq_l <= '0' when sync_bus_cs_l = '0' and hcnt(1) = '1' and cpu_rd_l = '0' else '1';
 sync_bus_stb    <= '0' when sync_bus_cs_l = '0' and hcnt(1) = '0' else '1';
 sync_bus_r_w_l  <= '0' when sync_bus_stb  = '0' and cpu_rd_l = '1' else '1';
@@ -400,7 +496,35 @@ port map (
 
 hp <= hcnt(7 downto 3) when c_flip = '0' else not hcnt(7 downto 3);
 vp <= vcnt(7 downto 3) when c_flip = '0' else not vcnt(7 downto 3);
-vram_addr <= vram_addr_ab when mod_alib = '0' and mod_ponp = '0' else '0' & hcnt(2) & vp & hp when hcnt(8)='1' else
+-- Jr. Pac-Man video RAM address (mod_jr) — faithful jrpacman_scan_rows (pacman_v.cpp:607; 36x54 map,
+-- per-column scroll) + per-column colour.
+-- FIXED 2026-06-25 (origin bug): hcnt resets to 0x080, so hcnt(8:3) is 16-based and the visible line WRAPS
+-- across the 256H bit (hcnt(8)); vcnt likewise. MAME's col-=2 / row+=2 therefore land on the 256H/256V
+-- boundary (0x20), NOT 0x02. The old -0x02 put the HUD/playfield split on the wrong columns -> the scrolling
+-- maze was rendered into the non-scrolling band (edge strips -> corners after 90deg rot) while the HUD region
+-- (videoram 0x700+) filled the middle as garbage. Subtracting 0x20 realigns: playfield = cols 2..33,
+-- HUD = cols 0,1,34,35; HUD off-screen test (mr&0x20) now stays 0 over the visible rows instead of always 1.
+--   mc = map col = (hcnt 8:3) - 0x20   (== MAME col-2, wrap-correct); HUD edges when mc & 0x20.
+--   mr = map row = ((vcnt[+scroll]) 8:3) - 0x20  (== MAME row+2; scroll applied to PLAYFIELD only).
+--   code: playfield -> mc + mr*32 ; HUD -> mr + (((mc&3)|0x38)<<5) ; off-screen (HUD & mr&0x20) -> 0x77F.
+--   colour: playfield -> videoram[mc & 0x1f] ; HUD -> code_addr + 0x80.   phase: hcnt(2)=0 code, =1 colour.
+--   STILL TODO (separate from this fix): c_flip not applied to mc/mr (cf. hp/vp line 482-483); far-scroll mr
+--   has no mod-54 wrap. Neither affects the un-flipped, near-zero-scroll boot/attract screen.
+jr_mc <= hcnt(8 downto 3) - "100000";                                       -- was -"000010" (0x02); 0x20 = 256H origin
+jr_hud <= jr_mc(5);
+jr_vy <= vcnt + ('0' & jr_scroll);                                          -- scrolled pixel-Y (scroll is in PIXELS)
+jr_mr <= (jr_vy(8 downto 3) - "100000") when jr_hud = '0'                    -- was jr_vy(8:3) / vcnt(8:3) (no -0x20)
+    else (vcnt(8 downto 3)  - "100000");                                    -- tile row - 0x20 (256V origin); playfield scrolled
+jr_pf_scan  <= ("000000" & jr_mc) + ('0' & jr_mr & "00000");
+jr_hud_scan <= ("000000" & jr_mr) + ('0' & "1110" & jr_mc(1 downto 0) & "00000");
+jr_code_addr  <= x"77F"      when (jr_hud = '1' and jr_mr(5) = '1')   -- off-screen
+            else jr_hud_scan when  jr_hud = '1'                       -- HUD top/bottom rows
+            else jr_pf_scan;                                          -- playfield
+jr_color_addr <= ("0000000" & jr_mc(4 downto 0)) when jr_hud = '0'    -- playfield: col & 0x1f
+            else (jr_code_addr + x"080");                             -- HUD: scan + 0x80
+jr_vram_addr  <= jr_code_addr when hcnt(2) = '0' else jr_color_addr;
+vram_addr <= jr_vram_addr when mod_jr = '1' and hblank = '0' else  -- Jr tile scan on visible line; hblank falls through to vram_addr_ab for sprite-RAM fetch (0x3F0-0x3FF)
+             vram_addr_ab when mod_alib = '0' and mod_ponp = '0' else '0' & hcnt(2) & vp & hp when hcnt(8)='1' else
              x"FF" & hcnt(6 downto 4) & hcnt(2) when hblank = '1' and mod_ponp = '1' else
              x"EF" & hcnt(6 downto 4) & hcnt(2) when hblank = '1' else
              '0' & hcnt(2) & hp(3) & hp(3) & hp(3) & hp(3) & hp(0) & vp;
@@ -547,7 +671,8 @@ inj <= in0(3 downto 0) when control_reg(5 downto 4) = "01" or mod_club = '0' els
 cpu_data_in <=	cpu_vec_reg               when cpu_iorq_l = '0' and cpu_m1_l = '0' else 
                sync_bus_reg              when sync_bus_wreq_l = '0' else
                ram2_data                 when ram2_cs = '1'         else
-               rom_data                  when cpu_addr(14) = '0'    else -- ROM at 0000 - 3fff / 8000 - bfff
+               jr_rom_data               when mod_jr = '1' and jr_rom_sel = '1' else -- Jr ROM: 0000-3FFF + 8000-DFFF
+               rom_data                  when mod_jr = '0' and cpu_addr(14) = '0'  else -- ROM at 0000 - 3fff / 8000 - bfff
                in0(7 downto 4) & inj     when iodec_in0_l = '0'     else
                in1                       when iodec_in1_l = '0'     else
                dipsw1                    when iodec_dipsw1_l = '0'  else
@@ -556,6 +681,73 @@ cpu_data_in <=	cpu_vec_reg               when cpu_iorq_l = '0' and cpu_m1_l = '0
                "0000000" & mcnt2(10)     when iodec_myst2_l = '0'   else
                x"BF"                     when iodec_nop_l   = '0'   else
                ram_data;
+
+-- Jr. Pac-Man program ROM (40KB), gated on mod_jr. CPU sees ROM at 0000-3FFF and 8000-DFFF.
+jr_rom_sel  <= '1' when (cpu_addr(15 downto 14) = "00") or
+                        (cpu_addr(15) = '1' and cpu_addr(15 downto 13) /= "111") else '0';
+jr_prog_dl  <= '1' when dn_addr < x"A000" else '0';   -- program region of the Jr download blob (8d,8e,8h,8j,8k @ dn 0000-9FFF)
+-- Store the contiguous blob at the CPU addresses: dn 0000-3FFF stays; dn 4000-9FFF -> 8000-DFFF.
+jr_dn_waddr <= dn_addr when dn_addr < x"4000" else (dn_addr + x"4000");
+
+-- ADDRESS-INDEXED decrypt (rom_descrambler-style: stateless, no run counter to drift across the 0x5968 run).
+-- Combinational XOR value = entry whose [JR_BOUND(i),JR_BOUND(i+1)) range contains dn_addr.
+p_jr_decode_comb : process(dn_addr)
+	variable v : std_logic_vector(7 downto 0);
+begin
+	v := JR_VAL_TBL(0);
+	for i in 0 to 79 loop
+		if unsigned(dn_addr) >= JR_BOUND(i) then
+			v := JR_VAL_TBL(i);
+		end if;
+	end loop;
+	jr_xor_comb <= v;
+end process;
+jr_dn_data <= dn_data xor jr_xor_comb;   -- decrypted program byte (mask 0x00 outside the encrypted zones)
+
+u_jr_prog_rom : work.dpram generic map (16,8)
+port map
+(
+	clock_a   => clk,
+	address_a => cpu_addr,
+	data_a    => x"00",
+	q_a       => jr_rom_data,
+	clock_b   => clk,
+	wren_b    => dn_wr and mod_jr and jr_prog_dl,
+	address_b => jr_dn_waddr,
+	data_b    => jr_dn_data
+);
+
+-- Jr. Pac-Man latch2 (0x5070-0x5077, LS259 1H) and scroll (0x5080), gated on mod_jr.
+jr_latch2_l <= '0' when mod_jr='1' and sync_bus_stb='0' and sync_bus_r_w_l='0' and cpu_addr(12)='1' and ab(7 downto 3)="01110" else '1';
+jr_scroll_l <= '0' when mod_jr='1' and sync_bus_stb='0' and sync_bus_r_w_l='0' and cpu_addr(12)='1' and ab(7 downto 0)=x"80" else '1';
+
+p_jr_latch2 : process begin
+	wait until rising_edge(clk);
+	if ena_6 = '1' then
+		if watchdog_reset_l = '0' then
+			jr_latch2 <= (others => '0');
+		elsif jr_latch2_l = '0' then
+			jr_latch2(to_integer(unsigned(cpu_addr(2 downto 0)))) <= cpu_data_out(0);
+		end if;
+	end if;
+end process;
+
+p_jr_scroll : process begin
+	wait until rising_edge(clk);
+	if ena_6 = '1' then
+		if watchdog_reset_l = '0' then
+			jr_scroll <= (others => '0');
+		elsif jr_scroll_l = '0' then
+			jr_scroll <= cpu_data_out;
+		end if;
+	end if;
+end process;
+
+jr_palbank      <= jr_latch2(0);
+jr_colortabbank <= jr_latch2(1);
+jr_bgpriority   <= jr_latch2(3);
+jr_charbank     <= jr_latch2(4);
+jr_spritebank   <= jr_latch2(5);
 
 u_rams : work.dpram generic map (12,8)
 port map
@@ -659,7 +851,16 @@ port map (
 	PONP      => mod_ponp and not mod_van,
 	ENA_6     => ena_6,
 	CLK       => clk,
-	flip_screen => flip_screen
+	flip_screen => flip_screen,
+
+	mod_jr          => mod_jr,
+	jr_scroll       => jr_scroll,
+	jr_charbank     => jr_charbank,
+	jr_spritebank   => jr_spritebank,
+	jr_palbank      => jr_palbank,
+	jr_colortabbank => jr_colortabbank,
+	jr_bgpriority   => jr_bgpriority,
+	jr_hud          => jr_hud
 );
 
 O_HSYNC   <= hSync;
@@ -680,6 +881,7 @@ port map (
 	I_WR1_L       => wr1_l,
 	I_WR0_L       => wr0_l,
 	I_SOUND_ON    => c_sound,
+	mod_jr        => mod_jr,
 	--
 	dn_addr       => dn_addr,
 	dn_data       => dn_data,
